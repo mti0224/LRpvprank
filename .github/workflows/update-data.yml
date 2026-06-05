@@ -1,0 +1,33 @@
+name: Update PvP rank data
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 21 * * 0"
+
+permissions:
+  contents: write
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate latest data
+        run: python scripts/update_data.py
+
+      - name: Commit data
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update PvP rank data"
+          file_pattern: data/latest.json
