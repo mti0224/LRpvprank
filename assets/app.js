@@ -51,18 +51,39 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function fetchJson(url) {
-  const response = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-    },
-  });
+function proxiedUrls(url) {
+  return [
+    url,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  ];
+}
 
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${url}`);
+async function fetchJson(url) {
+  const errors = [];
+
+  for (const targetUrl of proxiedUrls(url)) {
+    try {
+      const response = await fetch(targetUrl, {
+        headers: {
+          Accept: "application/json",
+        },
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      errors.push(`${targetUrl}: ${error.message}`);
+    }
   }
 
-  return response.json();
+  throw new Error(
+    `無法讀取 API，可能是 CORS 或網路限制。原始網址：${url}。錯誤：${errors.join(" | ")}`
+  );
 }
 
 function increaseCount(counter, unitName) {
@@ -214,7 +235,7 @@ async function runRankUsage() {
         els.top100Output.textContent = layout(snapshots.top100, 30);
       }
 
-      await sleep(80);
+      await sleep(120);
     }
 
     if (Object.keys(snapshots.top10).length === 0) snapshots.top10 = cloneCounter(result);
