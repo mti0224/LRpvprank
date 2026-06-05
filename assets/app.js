@@ -1,4 +1,5 @@
 const DATA_URL = "./data/latest.json";
+const WORKFLOW_DISPATCH_URL = "https://api.github.com/repos/mti0224/LRpvprank/actions/workflows/update-data.yml/dispatches";
 
 const roleMention = "<@&1245930262991339591>";
 
@@ -9,6 +10,10 @@ const els = {
   runBtn: document.querySelector("#runBtn"),
   copyBtn: document.querySelector("#copyBtn"),
   downloadBtn: document.querySelector("#downloadBtn"),
+  triggerWorkflowBtn: document.querySelector("#triggerWorkflowBtn"),
+  githubTokenInput: document.querySelector("#githubTokenInput"),
+  workflowRefInput: document.querySelector("#workflowRefInput"),
+  workflowStatusText: document.querySelector("#workflowStatusText"),
   progressFill: document.querySelector("#progressFill"),
   statusText: document.querySelector("#statusText"),
   top10Output: document.querySelector("#top10Output"),
@@ -32,6 +37,10 @@ function setStatus(text, percent = null) {
   if (percent !== null) {
     els.progressFill.style.width = `${Math.max(0, Math.min(100, percent))}%`;
   }
+}
+
+function setWorkflowStatus(text) {
+  els.workflowStatusText.textContent = text;
 }
 
 function toSortedRows(counter) {
@@ -133,6 +142,52 @@ async function runRankUsage() {
   }
 }
 
+async function triggerWorkflow() {
+  const token = els.githubTokenInput.value.trim();
+  const ref = els.workflowRefInput.value.trim() || "main";
+
+  if (!token) {
+    setWorkflowStatus("請先輸入 GitHub Fine-grained token。");
+    return;
+  }
+
+  els.triggerWorkflowBtn.disabled = true;
+  setWorkflowStatus("正在觸發 GitHub Action...");
+
+  try {
+    const response = await fetch(WORKFLOW_DISPATCH_URL, {
+      method: "POST",
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${token}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ref }),
+    });
+
+    if (response.status === 204) {
+      setWorkflowStatus("已成功觸發 GitHub Action。請等待約 1～3 分鐘後按『重新讀取資料』。");
+      return;
+    }
+
+    let message = `HTTP ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data.message) message += `：${data.message}`;
+    } catch (_) {
+      // Ignore non-JSON GitHub response.
+    }
+
+    throw new Error(message);
+  } catch (error) {
+    console.error(error);
+    setWorkflowStatus(`觸發失敗：${error.message}`);
+  } finally {
+    els.triggerWorkflowBtn.disabled = false;
+  }
+}
+
 async function copyDiscordText() {
   const text = els.discordOutput.value;
   if (!text) return;
@@ -169,5 +224,6 @@ function downloadJson() {
 els.runBtn.addEventListener("click", runRankUsage);
 els.copyBtn.addEventListener("click", copyDiscordText);
 els.downloadBtn.addEventListener("click", downloadJson);
+els.triggerWorkflowBtn.addEventListener("click", triggerWorkflow);
 
 runRankUsage();
