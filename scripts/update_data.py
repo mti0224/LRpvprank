@@ -8,7 +8,7 @@ import requests
 
 API_BASE = "https://rangers.lerico.net/api"
 LEAGUE = "LEGEND"
-PLAYER_LIMIT = 100
+PLAYER_LIMIT = 200
 OUTPUT_PATH = Path("data/latest.json")
 
 LEAGUE_TRANSLATE = {
@@ -70,18 +70,20 @@ def main():
 
     print(f"Loading {LEAGUE} ranking...")
     rank_data = fetch_json(f"{API_BASE}/v2/pvp/league/rank/{LEAGUE}")
-    top100 = rank_data.get("top100") or []
-    mids = [player.get("mid") for player in top100[:PLAYER_LIMIT] if player.get("mid")]
+    ranking = rank_data.get("top200") or rank_data.get("top100") or []
+    mids = [player.get("mid") for player in ranking[:PLAYER_LIMIT] if player.get("mid")]
 
     result = {}
     snapshots = {"top10": {}, "top50": {}, "top100": {}, "all": {}}
     failed_mids = []
+    loaded_team_count = 0
 
     for rank, mid in enumerate(mids, start=1):
         print(f"Loading player {rank}/{len(mids)}: {mid}")
         try:
             player_data = fetch_json(f"{API_BASE}/getPlayer/{mid}")
             teams = extract_teams(player_data)
+            loaded_team_count += len(teams)
 
             for team in teams:
                 for unit in team:
@@ -119,7 +121,9 @@ def main():
         "league": LEAGUE,
         "leagueName": LEAGUE_TRANSLATE.get(LEAGUE, LEAGUE),
         "playerLimit": PLAYER_LIMIT,
+        "rangeLabel": "前 200 名玩家的 A/B 隊伍",
         "loadedPlayers": len(mids) - len(failed_mids),
+        "loadedTeams": loaded_team_count,
         "failedMids": failed_mids,
         "snapshots": snapshots,
         "sorted": {
