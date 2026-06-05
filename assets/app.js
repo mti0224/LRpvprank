@@ -1,17 +1,4 @@
-const API_BASE = "https://rangers.lerico.net/api";
-
-const leagueTranslate = {
-  LEGEND: "傳奇",
-  MASTER_1: "大師1",
-  MASTER_2: "大師2",
-  MASTER_3: "大師3",
-  DIAMOND_1: "鑽石1",
-  DIAMOND_2: "鑽石2",
-  DIAMOND_3: "鑽石3",
-  GOLD_1: "黃金1",
-  GOLD_2: "黃金2",
-  GOLD_3: "黃金3",
-};
+const DATA_URL = "./data/latest.json";
 
 const roleMention = "<@&1245930262991339591>";
 
@@ -47,51 +34,8 @@ function setStatus(text, percent = null) {
   }
 }
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function proxiedUrls(url) {
-  return [
-    url,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  ];
-}
-
-async function fetchJson(url) {
-  const errors = [];
-
-  for (const targetUrl of proxiedUrls(url)) {
-    try {
-      const response = await fetch(targetUrl, {
-        headers: {
-          Accept: "application/json",
-        },
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      errors.push(`${targetUrl}: ${error.message}`);
-    }
-  }
-
-  throw new Error(
-    `無法讀取 API，可能是 CORS 或網路限制。原始網址：${url}。錯誤：${errors.join(" | ")}`
-  );
-}
-
-function increaseCount(counter, unitName) {
-  counter[unitName] = (counter[unitName] || 0) + 1;
-}
-
 function toSortedRows(counter) {
-  return Object.entries(counter)
+  return Object.entries(counter || {})
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "zh-Hant"));
 }
@@ -102,12 +46,9 @@ function layout(counter, n = 999) {
   return rows.map((row, index) => `${index + 1}. ${row.name}: ${row.count}`).join("\n");
 }
 
-function cloneCounter(counter) {
-  return JSON.parse(JSON.stringify(counter));
-}
-
-function buildDiscordText({ date, league, snapshots }) {
-  const leagueName = leagueTranslate[league] || league;
+function buildDiscordText({ date, data }) {
+  const leagueName = data.leagueName || data.league || "傳奇";
+  const snapshots = data.snapshots || {};
 
   return `${roleMention} 
 # ${date}本週${leagueName}段位角色使用率
@@ -130,41 +71,22 @@ ${layout(snapshots.all, 30)}
 `;
 }
 
-async function loadRangersDict() {
-  setStatus("讀取中文翻譯資料...", 2);
-  const zhData = await fetchJson(`${API_BASE}/v2/translate?keys=zh:UNIT`);
+async function loadLatestData() {
+  const response = await fetch(`${DATA_URL}?t=${Date.now()}`, {
+    cache: "no-store",
+  });
 
-  setStatus("讀取角色基本資料...", 5);
-  const rangersData = await fetchJson(`${API_BASE}/getRangersBasics`);
-
-  const unitNames = zhData["zh:UNIT"] || {};
-  const dict = {};
-
-  for (const ranger of rangersData) {
-    const key = ranger.unitCode;
-    const nameCode = ranger.unitNameCode;
-    dict[key] = unitNames[nameCode] || "undefined";
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error("找不到 data/latest.json。請先到 GitHub Actions 手動執行 Update PvP rank data workflow 產生資料。");
+    }
+    throw new Error(`讀取 data/latest.json 失敗：HTTP ${response.status}`);
   }
 
-  return dict;
-}
-
-function extractTeams(playerData) {
-  const teamGroup = playerData?.playerUnitTeamGroupMap;
-  const pvpteam = teamGroup?.pvpteam;
-
-  if (!pvpteam) return [];
-
-  const teams = [];
-  if (Array.isArray(pvpteam["1"])) teams.push(pvpteam["1"]);
-  if (Array.isArray(pvpteam["2"])) teams.push(pvpteam["2"]);
-
-  return teams;
+  return response.json();
 }
 
 async function runRankUsage() {
-  const league = els.leagueSelect.value;
-  const limit = Number(els.limitSelect.value);
   const date = els.dateInput.value.trim() || todayTitle();
 
   els.runBtn.disabled = true;
@@ -172,108 +94,40 @@ async function runRankUsage() {
   els.downloadBtn.disabled = true;
   latestResult = null;
 
-  els.top10Output.textContent = "統計中...";
-  els.top50Output.textContent = "統計中...";
-  els.top100Output.textContent = "統計中...";
-  els.allOutput.textContent = "統計中...";
+  els.top10Output.textContent = "載入中...";
+  els.top50Output.textContent = "載入中...";
+  els.top100Output.textContent = "載入中...";
+  els.allOutput.textContent = "載入中...";
   els.discordOutput.value = "";
 
   try {
-    const rangersDict = await loadRangersDict();
-
-    setStatus(`讀取 ${leagueTranslate[league] || league} 排行榜...`, 8);
-    const rankData = await fetchJson(`${API_BASE}/v2/pvp/league/rank/${league}`);
-    const top100 = Array.isArray(rankData.top100) ? rankData.top100 : [];
-    const mids = top100.slice(0, limit).map(player => player.mid).filter(Boolean);
-
-    if (mids.length === 0) {
-      throw new Error("排行榜資料中沒有可用的 mid。");
-    }
-
-    const result = {};
-    const snapshots = {
-      top10: {},
-      top50: {},
-      top100: {},
-      all: {},
-    };
-
-    for (let i = 0; i < mids.length; i += 1) {
-      const mid = mids[i];
-      const rank = i + 1;
-      const percent = 8 + Math.round((rank / mids.length) * 87);
-
-      setStatus(`讀取第 ${rank}/${mids.length} 名玩家資料...`, percent);
-
-      try {
-        const playerData = await fetchJson(`${API_BASE}/getPlayer/${mid}`);
-        const teams = extractTeams(playerData);
-
-        for (const team of teams) {
-          for (const unit of team) {
-            const unitCode = unit.unitCode;
-            const unitName = rangersDict[unitCode] || unitCode || "undefined";
-            increaseCount(result, unitName);
-          }
-        }
-      } catch (error) {
-        console.warn(`讀取玩家 ${mid} 失敗：`, error);
-      }
-
-      if (rank === 10) {
-        snapshots.top10 = cloneCounter(result);
-        els.top10Output.textContent = layout(snapshots.top10, 20);
-      }
-
-      if (rank === 50) {
-        snapshots.top50 = cloneCounter(result);
-        els.top50Output.textContent = layout(snapshots.top50, 30);
-      }
-
-      if (rank === 100) {
-        snapshots.top100 = cloneCounter(result);
-        els.top100Output.textContent = layout(snapshots.top100, 30);
-      }
-
-      await sleep(120);
-    }
-
-    if (Object.keys(snapshots.top10).length === 0) snapshots.top10 = cloneCounter(result);
-    if (Object.keys(snapshots.top50).length === 0) snapshots.top50 = cloneCounter(result);
-    if (Object.keys(snapshots.top100).length === 0) snapshots.top100 = cloneCounter(result);
-    snapshots.all = cloneCounter(result);
+    setStatus("讀取已產生的統計資料...", 30);
+    const data = await loadLatestData();
+    const snapshots = data.snapshots || {};
 
     els.top10Output.textContent = layout(snapshots.top10, 20);
     els.top50Output.textContent = layout(snapshots.top50, 30);
     els.top100Output.textContent = layout(snapshots.top100, 30);
     els.allOutput.textContent = layout(snapshots.all, 30);
 
-    latestResult = {
-      generatedAt: new Date().toISOString(),
-      league,
-      leagueName: leagueTranslate[league] || league,
-      playerLimit: limit,
-      snapshots,
-      sorted: {
-        top10: toSortedRows(snapshots.top10),
-        top50: toSortedRows(snapshots.top50),
-        top100: toSortedRows(snapshots.top100),
-        all: toSortedRows(snapshots.all),
-      },
-    };
-
-    els.discordOutput.value = buildDiscordText({ date, league, snapshots });
+    latestResult = data;
+    els.discordOutput.value = buildDiscordText({ date, data });
 
     els.copyBtn.disabled = false;
     els.downloadBtn.disabled = false;
-    setStatus("統計完成", 100);
+
+    const generatedText = data.generatedAtTaipei
+      ? `統計完成。資料產生時間：${data.generatedAtTaipei}，成功讀取玩家數：${data.loadedPlayers ?? "未知"}`
+      : "統計完成。";
+
+    setStatus(generatedText, 100);
   } catch (error) {
     console.error(error);
     setStatus(`發生錯誤：${error.message}`, 100);
-    els.top10Output.textContent = "統計失敗";
-    els.top50Output.textContent = "統計失敗";
-    els.top100Output.textContent = "統計失敗";
-    els.allOutput.textContent = "統計失敗";
+    els.top10Output.textContent = "載入失敗";
+    els.top50Output.textContent = "載入失敗";
+    els.top100Output.textContent = "載入失敗";
+    els.allOutput.textContent = "載入失敗";
   } finally {
     els.runBtn.disabled = false;
   }
@@ -294,7 +148,7 @@ async function copyDiscordText() {
 function downloadJson() {
   if (!latestResult) return;
 
-  const league = latestResult.league.toLowerCase();
+  const league = (latestResult.league || "legend").toLowerCase();
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const filename = `${league}_rank_units_${stamp}.json`;
 
@@ -315,3 +169,5 @@ function downloadJson() {
 els.runBtn.addEventListener("click", runRankUsage);
 els.copyBtn.addEventListener("click", copyDiscordText);
 els.downloadBtn.addEventListener("click", downloadJson);
+
+runRankUsage();
