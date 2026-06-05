@@ -58,6 +58,7 @@ function layout(counter, n = 999) {
 function buildDiscordText({ date, data }) {
   const leagueName = data.leagueName || data.league || "傳奇";
   const snapshots = data.snapshots || {};
+  const rangeLabel = data.rangeLabel || "前 200 名玩家的 A/B 隊伍";
 
   return `${roleMention} 
 # ${date}本週${leagueName}段位角色使用率
@@ -73,7 +74,7 @@ ${layout(snapshots.top50, 30)}
 \`\`\`
 ${layout(snapshots.top100, 30)}
 \`\`\`
-**目前統計範圍玩家：(角色使用率取前30名)**
+**${rangeLabel}：(角色使用率取前30名)**
 \`\`\`
 ${layout(snapshots.all, 30)}
 \`\`\`
@@ -126,7 +127,7 @@ async function runRankUsage() {
     els.downloadBtn.disabled = false;
 
     const generatedText = data.generatedAtTaipei
-      ? `統計完成。資料產生時間：${data.generatedAtTaipei}，成功讀取玩家數：${data.loadedPlayers ?? "未知"}`
+      ? `統計完成。資料產生時間：${data.generatedAtTaipei}，成功讀取玩家數：${data.loadedPlayers ?? "未知"}，隊伍數：${data.loadedTeams ?? "未知"}`
       : "統計完成。";
 
     setStatus(generatedText, 100);
