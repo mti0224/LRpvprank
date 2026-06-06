@@ -27,7 +27,20 @@ let latestResult = null;
 
 function todayTitle() {
   const now = new Date();
-  return `${now.getMonth() + 1}/${now.getDate()}`;
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${month}${day}`;
+}
+
+function normalizeDateTitle(value) {
+  const raw = String(value || "").trim();
+  const match = raw.match(/^(\d{1,2})\D*(\d{1,2})$/);
+
+  if (!match) return raw || todayTitle();
+
+  const month = match[1].padStart(2, "0");
+  const day = match[2].padStart(2, "0");
+  return `${month}${day}`;
 }
 
 els.dateInput.value = todayTitle();
@@ -59,9 +72,10 @@ function buildDiscordText({ date, data }) {
   const leagueName = data.leagueName || data.league || "傳奇";
   const snapshots = data.snapshots || {};
   const rangeLabel = data.rangeLabel || "前 200 名玩家的 A/B 隊伍";
+  const dateTitle = normalizeDateTitle(date);
 
   return `${roleMention} 
-# ${date}本週${leagueName}段位角色使用率
+# ${dateTitle}本週${leagueName}段位角色使用率
 **前10名玩家：(角色使用率取前20名)**
 \`\`\`
 ${layout(snapshots.top10, 20)}
@@ -97,7 +111,8 @@ async function loadLatestData() {
 }
 
 async function runRankUsage() {
-  const date = els.dateInput.value.trim() || todayTitle();
+  const date = normalizeDateTitle(els.dateInput.value || todayTitle());
+  els.dateInput.value = date;
 
   els.runBtn.disabled = true;
   els.copyBtn.disabled = true;
