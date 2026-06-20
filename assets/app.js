@@ -88,7 +88,7 @@ ${layout(snapshots.top50, 30)}
 \`\`\`
 ${layout(snapshots.top100, 30)}
 \`\`\`
-**${rangeLabel}：(角色使用率取前30名)**
+**全段位排名：(角色使用率取前30名)**
 \`\`\`
 ${layout(snapshots.all, 30)}
 \`\`\`
