@@ -23,7 +23,7 @@ LEAGUE_TRANSLATE = {
 }
 
 session = requests.Session()
-session.headers.update({"User-Agent": "LRpvprank/2.0"})
+session.headers.update({"User-Agent": "LRpvprank/2.1"})
 
 
 def fetch_json(url):
@@ -39,6 +39,13 @@ def sorted_rows(counter):
     ]
 
 
+def appearance_count(row):
+    try:
+        return max(0, int(row.get("appearanceCount") or 0))
+    except (TypeError, ValueError, AttributeError):
+        return 0
+
+
 def rows_to_counter(rows):
     counter = {}
     for row in rows or []:
@@ -46,12 +53,7 @@ def rows_to_counter(rows):
             continue
 
         name = str(row.get("name") or row.get("rangerId") or "undefined")
-        raw_count = row.get("appearanceCount", 0)
-        try:
-            count = int(raw_count)
-        except (TypeError, ValueError):
-            count = 0
-
+        count = appearance_count(row)
         if count > 0:
             counter[name] = count
 
@@ -66,11 +68,45 @@ def scope_counter(usage_data, top_n):
     return rows_to_counter(scope["rangers"])
 
 
+def parse_generated_at(value):
+    text = str(value or "").strip()
+    if not text:
+        return datetime.now(timezone.utc)
+
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return datetime.now(timezone.utc)
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def existing_source_timestamp():
+    if not OUTPUT_PATH.is_file():
+        return None
+
+    try:
+        existing = json.loads(OUTPUT_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+    source = existing.get("source") if isinstance(existing, dict) else None
+    return source.get("generatedAtUtc") if isinstance(source, dict) else None
+
+
 def main():
     print("Loading rangerbook PvP usage data...")
     usage_data = fetch_json(RANGERBOOK_USAGE_URL)
 
     metadata = usage_data.get("metadata") or {}
+    source_generated_at = str(metadata.get("generatedAtUtc") or "").strip() or None
+
+    if source_generated_at and existing_source_timestamp() == source_generated_at:
+        print(f"No rangerbook update: generatedAtUtc={source_generated_at}")
+        return
+
     league = str(metadata.get("league") or LEAGUE).upper()
 
     snapshots = {
@@ -83,27 +119,35 @@ def main():
     if not snapshots["all"]:
         raise ValueError("rangerbook usage.json 的 rangers 資料為空")
 
-    now_utc = datetime.now(timezone.utc)
-    now_tw = now_utc.astimezone(timezone(timedelta(hours=8)))
+    source_utc = parse_generated_at(source_generated_at)
+    source_tw = source_utc.astimezone(timezone(timedelta(hours=8)))
 
     loaded_players = int(metadata.get("sampleCount") or 0)
     ranking_count = int(metadata.get("rankingCount") or PLAYER_LIMIT)
     failure_count = int(metadata.get("playerDataFailureCount") or 0)
 
+    ranger_rows = usage_data.get("rangers") or []
+    total_appearances = sum(
+        appearance_count(row)
+        for row in ranger_rows
+        if isinstance(row, dict)
+    )
+    loaded_team_count = round(total_appearances / 5) if total_appearances else None
+
     output = {
-        "generatedAt": now_utc.isoformat(),
-        "generatedAtTaipei": now_tw.strftime("%Y-%m-%d %H:%M:%S"),
-        "dateTitle": f"{now_tw.month}/{now_tw.day}",
+        "generatedAt": source_utc.isoformat(),
+        "generatedAtTaipei": source_tw.strftime("%Y-%m-%d %H:%M:%S"),
+        "dateTitle": f"{source_tw.month}/{source_tw.day}",
         "league": league,
         "leagueName": LEAGUE_TRANSLATE.get(league, league),
         "playerLimit": PLAYER_LIMIT,
         "rangeLabel": "前 200 名玩家的 A/B 隊伍",
         "loadedPlayers": loaded_players,
-        "loadedTeams": None,
+        "loadedTeams": loaded_team_count,
         "failedMids": [],
         "source": {
             "url": RANGERBOOK_USAGE_URL,
-            "generatedAtUtc": metadata.get("generatedAtUtc"),
+            "generatedAtUtc": source_generated_at,
             "rankingCount": ranking_count,
             "playerDataFailureCount": failure_count,
         },
@@ -119,8 +163,9 @@ def main():
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")
     print(
-        f"Wrote {OUTPUT_PATH}: league={league}, "
-        f"players={loaded_players}/{ranking_count}, failures={failure_count}"
+        f"Wrote {OUTPUT_PATH}: source={source_generated_at}, "
+        f"league={league}, players={loaded_players}/{ranking_count}, "
+        f"teams={loaded_team_count}, failures={failure_count}"
     )
 
 
