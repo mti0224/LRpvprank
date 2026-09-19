@@ -1,13 +1,19 @@
 import json
+import re
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 import requests
 
 RANGERBOOK_USAGE_URL = "https://pvp-data.warmycat.com/usage.json"
+RANGERBOOK_INDEX_URL = (
+    "https://raw.githubusercontent.com/mti0224/rangerbook/main/res/Ranger_index.json"
+)
 LEAGUE = "LEGEND"
 PLAYER_LIMIT = 200
 OUTPUT_PATH = Path("data/latest.json")
+
+UNIT_CODE_RE = re.compile(r"^u\d+[a-z]?(?:-[a-z0-9_]+)?$", re.IGNORECASE)
 
 LEAGUE_TRANSLATE = {
     "LEGEND": "傳奇",
@@ -23,7 +29,7 @@ LEAGUE_TRANSLATE = {
 }
 
 session = requests.Session()
-session.headers.update({"User-Agent": "LRpvprank/2.1"})
+session.headers.update({"User-Agent": "LRpvprank/2.2"})
 
 
 def fetch_json(url):
@@ -46,26 +52,89 @@ def appearance_count(row):
         return 0
 
 
-def rows_to_counter(rows):
+def is_unit_code(value):
+    return bool(UNIT_CODE_RE.fullmatch(str(value or "").strip()))
+
+
+def row_needs_translation(row):
+    if not isinstance(row, dict):
+        return False
+
+    ranger_id = str(row.get("rangerId") or "").strip()
+    name = str(row.get("name") or "").strip()
+    return bool(
+        ranger_id
+        and (
+            not name
+            or name == ranger_id
+            or is_unit_code(name)
+        )
+    )
+
+
+def usage_needs_translation(usage_data):
+    collections = [usage_data.get("rangers") or []]
+
+    scopes = usage_data.get("scopes") or {}
+    for key in ("10", "50", "100"):
+        scope = scopes.get(key)
+        if isinstance(scope, dict):
+            collections.append(scope.get("rangers") or [])
+
+    return any(
+        row_needs_translation(row)
+        for rows in collections
+        for row in rows
+    )
+
+
+def load_name_map():
+    print("Untranslated Ranger code found; loading rangerbook Ranger_index.json...")
+    index_data = fetch_json(RANGERBOOK_INDEX_URL)
+    if not isinstance(index_data, list):
+        raise ValueError("rangerbook Ranger_index.json 格式錯誤")
+
+    return {
+        str(row.get("id")): str(row.get("name"))
+        for row in index_data
+        if isinstance(row, dict) and row.get("id") and row.get("name")
+    }
+
+
+def display_name(row, name_map):
+    ranger_id = str(row.get("rangerId") or "").strip()
+    name = str(row.get("name") or ranger_id or "undefined").strip()
+
+    if ranger_id and (not name or name == ranger_id or is_unit_code(name)):
+        translated = name_map.get(ranger_id)
+        if translated:
+            return translated
+
+    return name or ranger_id or "undefined"
+
+
+def rows_to_counter(rows, name_map=None):
+    name_map = name_map or {}
     counter = {}
+
     for row in rows or []:
         if not isinstance(row, dict):
             continue
 
-        name = str(row.get("name") or row.get("rangerId") or "undefined")
+        name = display_name(row, name_map)
         count = appearance_count(row)
         if count > 0:
-            counter[name] = count
+            counter[name] = counter.get(name, 0) + count
 
     return counter
 
 
-def scope_counter(usage_data, top_n):
+def scope_counter(usage_data, top_n, name_map=None):
     scopes = usage_data.get("scopes") or {}
     scope = scopes.get(str(top_n))
     if not isinstance(scope, dict) or not isinstance(scope.get("rangers"), list):
         raise ValueError(f"rangerbook usage.json 缺少 scopes.{top_n}.rangers")
-    return rows_to_counter(scope["rangers"])
+    return rows_to_counter(scope["rangers"], name_map)
 
 
 def parse_generated_at(value):
@@ -83,17 +152,35 @@ def parse_generated_at(value):
     return parsed.astimezone(timezone.utc)
 
 
-def existing_source_timestamp():
+def load_existing_output():
     if not OUTPUT_PATH.is_file():
         return None
 
     try:
-        existing = json.loads(OUTPUT_PATH.read_text(encoding="utf-8"))
+        data = json.loads(OUTPUT_PATH.read_text(encoding="utf-8"))
     except Exception:
         return None
 
+    return data if isinstance(data, dict) else None
+
+
+def existing_source_timestamp(existing):
     source = existing.get("source") if isinstance(existing, dict) else None
     return source.get("generatedAtUtc") if isinstance(source, dict) else None
+
+
+def existing_has_untranslated(existing):
+    snapshots = existing.get("snapshots") if isinstance(existing, dict) else None
+    if not isinstance(snapshots, dict):
+        return True
+
+    for snapshot in snapshots.values():
+        if not isinstance(snapshot, dict):
+            continue
+        if any(is_unit_code(name) for name in snapshot):
+            return True
+
+    return False
 
 
 def main():
@@ -103,17 +190,24 @@ def main():
     metadata = usage_data.get("metadata") or {}
     source_generated_at = str(metadata.get("generatedAtUtc") or "").strip() or None
 
-    if source_generated_at and existing_source_timestamp() == source_generated_at:
+    existing = load_existing_output()
+    if (
+        source_generated_at
+        and existing_source_timestamp(existing) == source_generated_at
+        and not existing_has_untranslated(existing)
+    ):
         print(f"No rangerbook update: generatedAtUtc={source_generated_at}")
         return
+
+    name_map = load_name_map() if usage_needs_translation(usage_data) else {}
 
     league = str(metadata.get("league") or LEAGUE).upper()
 
     snapshots = {
-        "top10": scope_counter(usage_data, 10),
-        "top50": scope_counter(usage_data, 50),
-        "top100": scope_counter(usage_data, 100),
-        "all": rows_to_counter(usage_data.get("rangers")),
+        "top10": scope_counter(usage_data, 10, name_map),
+        "top50": scope_counter(usage_data, 50, name_map),
+        "top100": scope_counter(usage_data, 100, name_map),
+        "all": rows_to_counter(usage_data.get("rangers"), name_map),
     }
 
     if not snapshots["all"]:
@@ -147,6 +241,7 @@ def main():
         "failedMids": [],
         "source": {
             "url": RANGERBOOK_USAGE_URL,
+            "rangerIndexUrl": RANGERBOOK_INDEX_URL,
             "generatedAtUtc": source_generated_at,
             "rankingCount": ranking_count,
             "playerDataFailureCount": failure_count,
