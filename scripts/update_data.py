@@ -1,12 +1,10 @@
 import json
-import time
-from copy import deepcopy
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 import requests
 
-API_BASE = "https://rangers.lerico.net/api"
+RANGERBOOK_USAGE_URL = "https://pvp-data.warmycat.com/usage.json"
 LEAGUE = "LEGEND"
 PLAYER_LIMIT = 200
 OUTPUT_PATH = Path("data/latest.json")
@@ -25,7 +23,7 @@ LEAGUE_TRANSLATE = {
 }
 
 session = requests.Session()
-session.headers.update({"User-Agent": "LRpvprank/1.0"})
+session.headers.update({"User-Agent": "LRpvprank/2.0"})
 
 
 def fetch_json(url):
@@ -41,90 +39,74 @@ def sorted_rows(counter):
     ]
 
 
-def extract_teams(player_data):
-    team_group = player_data.get("playerUnitTeamGroupMap") or {}
-    pvpteam = team_group.get("pvpteam") or {}
+def rows_to_counter(rows):
+    counter = {}
+    for row in rows or []:
+        if not isinstance(row, dict):
+            continue
 
-    teams = []
-    if isinstance(pvpteam.get("1"), list):
-        teams.append(pvpteam["1"])
-    if isinstance(pvpteam.get("2"), list):
-        teams.append(pvpteam["2"])
-    return teams
+        name = str(row.get("name") or row.get("rangerId") or "undefined")
+        raw_count = row.get("appearanceCount", 0)
+        try:
+            count = int(raw_count)
+        except (TypeError, ValueError):
+            count = 0
+
+        if count > 0:
+            counter[name] = count
+
+    return counter
+
+
+def scope_counter(usage_data, top_n):
+    scopes = usage_data.get("scopes") or {}
+    scope = scopes.get(str(top_n))
+    if not isinstance(scope, dict) or not isinstance(scope.get("rangers"), list):
+        raise ValueError(f"rangerbook usage.json 缺少 scopes.{top_n}.rangers")
+    return rows_to_counter(scope["rangers"])
 
 
 def main():
-    print("Loading translations...")
-    zh_data = fetch_json(f"{API_BASE}/v2/translate?keys=zh:UNIT")
+    print("Loading rangerbook PvP usage data...")
+    usage_data = fetch_json(RANGERBOOK_USAGE_URL)
 
-    print("Loading ranger basics...")
-    rangers_data = fetch_json(f"{API_BASE}/getRangersBasics")
+    metadata = usage_data.get("metadata") or {}
+    league = str(metadata.get("league") or LEAGUE).upper()
 
-    unit_names = zh_data.get("zh:UNIT", {})
-    rangers_dict = {}
-    for ranger in rangers_data:
-        unit_code = ranger.get("unitCode")
-        unit_name_code = ranger.get("unitNameCode")
-        if unit_code:
-            rangers_dict[unit_code] = unit_names.get(unit_name_code, unit_code)
+    snapshots = {
+        "top10": scope_counter(usage_data, 10),
+        "top50": scope_counter(usage_data, 50),
+        "top100": scope_counter(usage_data, 100),
+        "all": rows_to_counter(usage_data.get("rangers")),
+    }
 
-    print(f"Loading {LEAGUE} ranking...")
-    rank_data = fetch_json(f"{API_BASE}/v2/pvp/league/rank/{LEAGUE}")
-    ranking = rank_data.get("top200") or rank_data.get("top100") or []
-    mids = [player.get("mid") for player in ranking[:PLAYER_LIMIT] if player.get("mid")]
-
-    result = {}
-    snapshots = {"top10": {}, "top50": {}, "top100": {}, "all": {}}
-    failed_mids = []
-    loaded_team_count = 0
-
-    for rank, mid in enumerate(mids, start=1):
-        print(f"Loading player {rank}/{len(mids)}: {mid}")
-        try:
-            player_data = fetch_json(f"{API_BASE}/getPlayer/{mid}")
-            teams = extract_teams(player_data)
-            loaded_team_count += len(teams)
-
-            for team in teams:
-                for unit in team:
-                    unit_code = unit.get("unitCode")
-                    unit_name = rangers_dict.get(unit_code, unit_code or "undefined")
-                    result[unit_name] = result.get(unit_name, 0) + 1
-        except Exception as exc:
-            print(f"Failed to load player {mid}: {exc}")
-            failed_mids.append(mid)
-
-        if rank == 10:
-            snapshots["top10"] = deepcopy(result)
-        elif rank == 50:
-            snapshots["top50"] = deepcopy(result)
-        elif rank == 100:
-            snapshots["top100"] = deepcopy(result)
-
-        time.sleep(0.12)
-
-    if not snapshots["top10"]:
-        snapshots["top10"] = deepcopy(result)
-    if not snapshots["top50"]:
-        snapshots["top50"] = deepcopy(result)
-    if not snapshots["top100"]:
-        snapshots["top100"] = deepcopy(result)
-    snapshots["all"] = deepcopy(result)
+    if not snapshots["all"]:
+        raise ValueError("rangerbook usage.json 的 rangers 資料為空")
 
     now_utc = datetime.now(timezone.utc)
     now_tw = now_utc.astimezone(timezone(timedelta(hours=8)))
+
+    loaded_players = int(metadata.get("sampleCount") or 0)
+    ranking_count = int(metadata.get("rankingCount") or PLAYER_LIMIT)
+    failure_count = int(metadata.get("playerDataFailureCount") or 0)
 
     output = {
         "generatedAt": now_utc.isoformat(),
         "generatedAtTaipei": now_tw.strftime("%Y-%m-%d %H:%M:%S"),
         "dateTitle": f"{now_tw.month}/{now_tw.day}",
-        "league": LEAGUE,
-        "leagueName": LEAGUE_TRANSLATE.get(LEAGUE, LEAGUE),
+        "league": league,
+        "leagueName": LEAGUE_TRANSLATE.get(league, league),
         "playerLimit": PLAYER_LIMIT,
         "rangeLabel": "前 200 名玩家的 A/B 隊伍",
-        "loadedPlayers": len(mids) - len(failed_mids),
-        "loadedTeams": loaded_team_count,
-        "failedMids": failed_mids,
+        "loadedPlayers": loaded_players,
+        "loadedTeams": None,
+        "failedMids": [],
+        "source": {
+            "url": RANGERBOOK_USAGE_URL,
+            "generatedAtUtc": metadata.get("generatedAtUtc"),
+            "rankingCount": ranking_count,
+            "playerDataFailureCount": failure_count,
+        },
         "snapshots": snapshots,
         "sorted": {
             "top10": sorted_rows(snapshots["top10"]),
@@ -136,7 +118,10 @@ def main():
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"Wrote {OUTPUT_PATH}")
+    print(
+        f"Wrote {OUTPUT_PATH}: league={league}, "
+        f"players={loaded_players}/{ranking_count}, failures={failure_count}"
+    )
 
 
 if __name__ == "__main__":
