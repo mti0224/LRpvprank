@@ -2,15 +2,26 @@ name: Update PvP rank data
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "scripts/update_data.py"
+      - ".github/workflows/update-data.yml"
   schedule:
-    - cron: "0 21 * * 0"
+    - cron: "*/5 * * * *"
 
 permissions:
   contents: write
 
+concurrency:
+  group: lrpvprank-rangerbook-sync
+  cancel-in-progress: true
+
 jobs:
   update-data:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,11 +34,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Generate latest data
+      - name: Sync rangerbook PvP usage
         run: python scripts/update_data.py
 
-      - name: Commit data
+      - name: Commit data when rangerbook changed
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Update PvP rank data"
+          commit_message: "Sync PvP rank data from rangerbook"
           file_pattern: data/latest.json
