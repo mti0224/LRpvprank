@@ -1,0 +1,32 @@
+name: Check PvP ranking poster
+on:
+  push:
+    branches: [main]
+    paths:
+      - "assets/poster.js"
+      - "assets/poster.css"
+      - "index.html"
+      - "data/ranger-metadata.json"
+      - "data/history/**"
+      - "tests/poster-static.test.cjs"
+      - ".github/workflows/poster-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check JavaScript syntax
+        run: node --check assets/poster.js
+      - name: Validate poster data, images, date index, font scope and layout
+        run: node tests/poster-static.test.cjs
+      - name: Compile PvP archival updater
+        run: python3 -m py_compile scripts/update_data.py
