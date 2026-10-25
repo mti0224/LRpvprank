@@ -41,3 +41,8 @@ workflow 會重新讀取 rangerbook PvP 資料並更新 `data/latest.json`。
 - `data/ranger-metadata.json` 由 Rangerbook V2 的 `visual.faceCenter.x/y` 與 `visual.scale` 整理而成，將臉部錨點實際參與縮圖定位和縮放，並套用外框內裁切。
 - 「王漢宗綜藝體繁」（HanWangZonYi）只用在 Canvas 內的文字，不會改動網站按鈕、下拉選單或全站字型。圖片產生前會等待字型載入。
 - `.github/workflows/poster-check.yml` 執行靜態合約檢查，`poster-browser-check.yml` 用實際 Chrome 驗證歷史日期、生成及圖片尺寸；`history-schema-check.yml` 則可重新確認上游歷史 API 結構。
+
+
+### 角色縮圖還原（libgame.so 核對）
+
+本頁原圖首先載入 `-thum.png`（只有不存在時才改用 `-thum-140.png`）。對照原生 ARM64 流程，`faceCenterX/Y` 是 Sprite 的 AnchorPoint（Y 由下往上），`sizeRatio` 是 Sprite 縮放倍率，原生縮放為呼叫端的 uiScale 乘上 sizeRatio。已核對的角色清單合成流程 uiScale=1.0，以原圖實際像素及錨點配置進 114×118 的遊戲原始遮罩，使用 `image/portrait_mask_native.png` 合成，最後將合成圖縮放到排行圖框。已移除原先自訂的 1.72 倍縮放與 51%／43% 定位；星級、背景等欄位沿用資料站原有素材。
