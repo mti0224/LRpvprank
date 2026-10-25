@@ -1,3 +1,16 @@
+/* 王漢宗綜藝體繁：僅提供排名圖分頁使用，不影響全站。 */
+@font-face{
+  font-family:"LRPosterWangZonYi";
+  src:local("王漢宗綜藝體繁"),local("HanWangZonYi"),
+      url("https://cdn.jsdelivr.net/gh/tadlearn/webfonts@main/HanWangZonYi.woff2") format("woff2");
+  font-style:normal;
+  font-weight:400 900;
+  font-display:block;
+}
+#posterView,#posterView button,#posterView select{
+  font-family:"LRPosterWangZonYi","王漢宗綜藝體繁","HanWangZonYi",sans-serif;
+}
+
 /* Ranking poster tab: keeps the existing statistics tool intact. */
 .view-tabs{width:min(1180px,calc(100% - 32px));margin:0 auto 20px;display:flex;flex-wrap:wrap;gap:10px}
 .view-tab{background:#222c44;color:#c7d5ec;border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:12px 20px;font-weight:700;cursor:pointer}
