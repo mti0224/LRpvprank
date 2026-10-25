@@ -167,7 +167,7 @@
       while (s.length && ctx.measureText(s + "…").width > width) s = s.slice(0,-1);
       capped[maxLines - 1] = s + "…";
     }
-    capped.forEach((line, i) => ctx.fillText(line, x, y + i * 31));
+    capped.forEach((line, i) => ctx.fillText(line, x, y + i * 25));
   }
   function drawPortrait(img, meta, x, y, w, h) {
     ctx.save();
@@ -239,15 +239,15 @@
     // Ranking order is column-major: 1-5 down, 6-10 down, ... 16-20 down.
     rows.forEach((row, i) => {
       const col = Math.floor(i / 5), line = i % 5;
-      const x = 48 + col * 467, y = 277 + line * 149;
-      const w = 427, h = 139;
+      const x = 148 + col * 430, y = 300 + line * 132;
+      const w = 414, h = 122;
       ctx.fillStyle = "rgba(5,13,28,.76)";
       roundBox(x,y,w,h,20); ctx.fill();
       ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(255,255,255,.28)";ctx.stroke();
       const img = assets.portraits[i];
       if (!img) missing++;
       const kind = starCategory(row.unit);
-      const bx = x + 12, by = y + 8, bw = 123, bh = 123;
+      const bx = x + 7, by = y + 5, bw = 111, bh = 111;
       frameLayer(fixed["bottom_" + kind],bx,by,bw,bh);
       drawPortrait(img,row.unit,bx+6,by+5,bw-12,bh-10);
       frameLayer(fixed.top,bx,by,bw,bh);
@@ -259,15 +259,15 @@
       }
       ctx.shadowColor = "rgba(0,0,0,.8)";ctx.shadowBlur = 5;
       ctx.fillStyle = i < 3 ? "#ffe69f" : "#d9e8ff";
-      ctx.font = "bold 31px " + font; ctx.textAlign = "left";
-      ctx.fillText(String(i+1).padStart(2,"0"), x + 147, y + 34);
+      ctx.font = "bold 27px " + font; ctx.textAlign = "left";
+      ctx.fillText(String(i+1).padStart(2,"0"), x + 127, y + 33);
       ctx.shadowBlur = 0;
       ctx.fillStyle = "#fff";
-      ctx.font = "bold 23px " + font;
-      caption(row.name, x + 196, y + 38, 216, 2);
+      ctx.font = "bold 21px " + font;
+      caption(row.name, x + 177, y + 34, 224, 2);
       ctx.fillStyle = "#ffe19d";
-      ctx.font = "bold 30px " + font;
-      ctx.fillText(row.count.toLocaleString("zh-TW") + " 次", x + 196, y + 117);
+      ctx.font = "bold 26px " + font;
+      ctx.fillText(row.count.toLocaleString("zh-TW") + " 次", x + 177, y + 103);
     });
     ctx.textAlign = "right";
     ctx.font = "18px " + font;
