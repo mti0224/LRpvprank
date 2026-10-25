@@ -1,0 +1,34 @@
+name: Inspect public PvP history schema
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/history-schema-check.yml"]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect public index and one monthly JSON schema
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request, datetime
+          base="https://pvp-data.warmycat.com/history/"
+          def fetch(path):
+              req=urllib.request.Request(base+path,headers={"User-Agent":"LRpvprank-schema-audit/1.0"})
+              with urllib.request.urlopen(req,timeout=25) as resp:
+                  return json.load(resp)
+          idx=fetch("index.json")
+          files=idx.get("files",[])
+          print("INDEX",json.dumps({"keys":list(idx),"count":len(files),"first_files":files[:5],"last_files":files[-8:],"metadata":idx.get("metadata")},ensure_ascii=False))
+          if files:
+              for file in [files[-1],files[0]]:
+                  obj=fetch(file)
+                  ss=obj.get("snapshots",[])
+                  print("MONTH",file,"keys",list(obj),"count",len(ss),"dates", [x.get("date") for x in ss[:3]],"last",[x.get("date") for x in ss[-3:]])
+                  if ss:
+                      example=ss[-1]
+                      print("SAMPLE",json.dumps({"keys":list(example),"date":example.get("date"),"sourceGeneratedAtUtc":example.get("sourceGeneratedAtUtc"),"scopes":{str(k):{"keys":list(v) if isinstance(v,dict) else [],"sampleCount":v.get("sampleCount") if isinstance(v,dict) else None,"rangerCount":len(v.get("rangers",{})) if isinstance(v,dict) else 0,"sampleRangers":list(v.get("rangers",{}).items())[:2] if isinstance(v,dict) else None} for k,v in (example.get("scopes") or {}).items()}},ensure_ascii=False))
+          PY
