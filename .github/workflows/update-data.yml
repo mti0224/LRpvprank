@@ -41,4 +41,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Sync PvP rank data from rangerbook"
-          file_pattern: data/latest.json
+          file_pattern: data/latest.json data/history/*.json
