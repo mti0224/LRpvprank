@@ -174,17 +174,20 @@
     roundBox(x, y, w, h, 14);
     ctx.clip();
     if (img) {
-      // Retain original transparent pixels. Enlarge then crop inside the rounded viewport;
-      // keep feet/bottom aligned while using the image face anchor to center horizontally.
-      const ratio = Number(meta && meta.sizeRatio);
-      const scale = Number.isFinite(ratio) ? Math.max(.8, Math.min(1.35, ratio)) : 1;
-      const zoom = 1.26 * scale;
-      const drawW = Math.max(w * zoom, h * img.naturalWidth / img.naturalHeight * 1.23);
-      const drawH = drawW * img.naturalHeight / img.naturalWidth;
-      const faceX = Number(meta && meta.faceCenter && meta.faceCenter.x);
-      const fx = Number.isFinite(faceX) ? faceX : .5;
-      const px = x + w / 2 - drawW * fx;
-      ctx.drawImage(img, px, y + h - drawH, drawW, drawH);
+      // Head-first crop: retain transparent space along the top and sides;
+      // the enlarged body's lower portion is clipped at the card bottom.
+      // Do not bottom-align the full sprite (that would hide the face).
+      const rawRatio = Number(meta && meta.sizeRatio);
+      const scale = Number.isFinite(rawRatio) ? Math.max(.8, Math.min(1.25, rawRatio)) : 1;
+      const drawH = h * 1.40 * scale;
+      const drawW = drawH * img.naturalWidth / img.naturalHeight;
+      const fx = Number(meta && meta.faceCenter && meta.faceCenter.x);
+      const fy = Number(meta && meta.faceCenter && meta.faceCenter.y);
+      const anchorX = Number.isFinite(fx) ? fx : .5;
+      const anchorY = Number.isFinite(fy) ? fy : .6;
+      const topMargin = Math.max(4, Math.min(14, 8 + (.62 - anchorY) * 55));
+      const px = x + w / 2 - drawW * anchorX;
+      ctx.drawImage(img, px, y + topMargin, drawW, drawH);
     } else {
       ctx.fillStyle = "rgba(255,255,255,.14)";
       ctx.fillRect(x, y, w, h);
