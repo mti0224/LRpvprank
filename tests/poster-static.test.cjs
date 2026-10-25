@@ -18,9 +18,16 @@ assert(poster.includes('document.fonts.load'), "Canvas should wait for webfont")
 assert(poster.includes('Math.floor(i / 5)'), "Four columns with ranking top-to-bottom expected");
 assert(poster.includes('line = i % 5'), "Five rows per column expected");
 
-assert(poster.includes('"本月傳奇熱門寵("'), "Monthly title missing");
+assert(poster.includes('const heading = "本月傳奇熱門寵";'), "Monthly title missing");
+assert(poster.includes('const dateText = "("'), "Separate smaller date label missing");
+assert(poster.includes("daySize = 77"), "Date font must be smaller than title");
+assert(poster.includes('HISTORY_BASE = "https://pvp-data.warmycat.com/history/"'), "Rangerbook history endpoint missing");
+assert(poster.includes('snapshot?.scopes?.all?.rangers'), "Historical full-rank usage must come from Rangerbook");
+assert(poster.includes('historySnapshots'), "Historical dates must be selectable");
 assert(poster.includes('data/ranger-metadata.json'), "Must use rangerbook metadata");
 assert(poster.includes('meta?.faceCenter?.x') && poster.includes('meta?.faceCenter?.y') && poster.includes('meta?.sizeRatio'), "Image crop must use original metadata");
+assert(poster.includes('targetFaceY - (1 - fy) * scaledH'), "Face center Y must act as a real positioning anchor");
+assert(poster.includes('scaledH = h * 1.72 * ratio'), "Native sizeRatio must affect scaled avatar size");
 assert(poster.includes('ctx.clip()'), "Portrait and frame must be clipped");
 assert(!poster.includes('caption(row.name'), "Do not render Ranger names");
 assert(!poster.includes('ctx.fillText(String(i+1)'), "Do not draw ranking indices");
