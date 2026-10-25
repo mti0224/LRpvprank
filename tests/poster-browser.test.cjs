@@ -30,6 +30,7 @@ const assert = require("node:assert/strict");
       assert(await page.locator("#posterDownloadBtn").isEnabled(),date+": download button not enabled");
       console.log("RENDERED",date,state);
       const canvas = await page.locator("#posterCanvas").evaluate(c=>({w:c.width,h:c.height,alpha:c.getContext("2d").getImageData(960,540,1,1).data[3]}));
+      await page.locator("#posterCanvas").screenshot({path:"artifacts/poster-"+date+".png"});
       assert.deepEqual(canvas,{w:1920,h:1080,alpha:255});
     }
     assert(!logs.length, "JavaScript errors: "+logs.join("; "));
