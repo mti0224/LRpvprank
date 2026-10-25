@@ -114,6 +114,27 @@
       <h2>Discord 公告文字</h2>
       <textarea id="discordOutput" readonly placeholder="統計完成後會出現在這裡"></textarea>
     </section>
+    </div>
+    <section id="posterView" class="view-panel" role="tabpanel" hidden>
+      <div class="panel">
+        <h2>全段位傳奇 PvP・前 20 名排名圖</h2>
+        <p class="hint">選擇指定日期的已保存 PvP 使用率快照，使用全段位（前 200 名玩家 A/B 隊伍）的前 20 位 Ranger。排列為 4 欄 × 5 列，由上而下、由左至右。日期代表資料擷取日期，並非官方保證的結算時間。</p>
+        <div class="poster-controls">
+          <label>資料日期（台灣時間）
+            <select id="posterDateSelect" aria-label="選擇資料快照日期"><option>讀取日期清單中…</option></select>
+          </label>
+          <button id="posterGenerateBtn" type="button">生成排名圖</button>
+          <button id="posterDownloadBtn" type="button" disabled>下載 PNG（1920 × 1080）</button>
+        </div>
+        <p id="posterStatus" class="poster-status" role="status">準備載入日期與角色資料…</p>
+        <p id="posterSource" class="poster-source"></p>
+      </div>
+      <div class="panel poster-preview-panel">
+        <h2>排名圖預覽</h2>
+        <div class="poster-preview-scroll"><canvas id="posterCanvas" width="1920" height="1080" aria-label="傳奇 PvP 前20名排行合成圖片"></canvas></div>
+        <p class="hint">背景採用 <code>image/bg.jpg</code>；外框與星級圖示採用 <code>image/frame_bottom_*.png</code>、<code>image/star_*.png</code>，角色縮圖直接載入 <code>mti0224/rangerbook_res</code> 的原始透明 PNG。若 <code>image/frame_top.png</code> 可用，將自動疊加。</p>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
