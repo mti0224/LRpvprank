@@ -222,58 +222,81 @@
     }
     capped.forEach((line, i) => ctx.fillText(line, x, y + i * 25));
   }
-  function portraitGeometry(img, meta, x, y, w, h) {
-    const raw = Number(meta?.sizeRatio);
-    const ratio = Number.isFinite(raw) && raw > 0 ? Math.max(.72, Math.min(1.4, raw)) : 1;
-    const faceX = Number(meta?.faceCenter?.x);
-    const faceY = Number(meta?.faceCenter?.y);
-    const fx = Number.isFinite(faceX) ? Math.max(.1, Math.min(.9, faceX)) : .5;
-    const fy = Number.isFinite(faceY) ? Math.max(.1, Math.min(.9, faceY)) : .6;
-    // faceCenter uses the native Cocos2d-X bottom-origin Y coordinate. Convert
-    // it to the downward-positive thumbnail image coordinate: 1 - faceCenterY.
-    const scaledH = h * 1.72 * ratio;
-    const scaledW = scaledH * img.naturalWidth / img.naturalHeight;
-    const targetFaceX = x + w * .51;
-    const targetFaceY = y + h * .43;
+  // Reconstructed from libgame.so ARM64:
+  // 0x181C75C-0x181C798: sprite.setAnchorPoint(faceCenterX, faceCenterY)
+  // 0x181C7A4-0x181C7BC: sprite.setScale(uiScale * sizeRatio)
+  // 0x17E6AA0: uiScale = 1.0 for the item portrait composition
+  // 0x1811BE4: combine sprite and supplied mask via CCRenderTexture.
+  //
+  // Cocos2d's anchor Y is bottom-up. drawImage's pixel origin is top-down.
+  // Original sprite pixels are used at their intrinsic size; do NOT invent
+  // a "1.72" fit/crop zoom or a 51%/43% substitute anchor.
+  function portraitGeometry(img, meta, maskWidth, maskHeight, uiScale = 1) {
+    const scaleFactor = Number(meta?.sizeRatio);
+    const sizeRatio = Number.isFinite(scaleFactor) && scaleFactor > 0 ? scaleFactor : 1;
+    const mx = Number(meta?.faceCenter?.x);
+    const my = Number(meta?.faceCenter?.y);
+    const ax = Number.isFinite(mx) ? mx : .5;
+    const ay = Number.isFinite(my) ? my : .5;
+    const width = img.naturalWidth * uiScale * sizeRatio;
+    const height = img.naturalHeight * uiScale * sizeRatio;
     return {
-      x: targetFaceX - fx * scaledW,
-      y: targetFaceY - (1 - fy) * scaledH,
-      width: scaledW,
-      height: scaledH
+      x: maskWidth / 2 - ax * width,
+      y: maskHeight / 2 - (1 - ay) * height,
+      width, height
     };
   }
-  function drawPortrait(img, meta, x, y, w, h) {
+  function composePortrait(img, meta, mask) {
+    if (!img || !mask) return null;
+    const buffer = document.createElement("canvas");
+    buffer.width = mask.naturalWidth;
+    buffer.height = mask.naturalHeight;
+    const temp = buffer.getContext("2d");
+    const geometry = portraitGeometry(img, meta, buffer.width, buffer.height);
+    temp.clearRect(0, 0, buffer.width, buffer.height);
+    temp.drawImage(img, geometry.x, geometry.y, geometry.width, geometry.height);
+    temp.globalCompositeOperation = "destination-in";
+    temp.drawImage(mask, 0, 0);
+    temp.globalCompositeOperation = "source-over";
+    return buffer;
+  }
+  function drawPortrait(img, meta, mask, x, y, w, h) {
+    const result = composePortrait(img, meta, mask);
+    if (result) {
+      ctx.drawImage(result, x, y, w, h);
+      return;
+    }
     ctx.save();
     roundBox(x, y, w, h, 13);
     ctx.clip();
-    if (img) {
-      const geometry = portraitGeometry(img, meta, x, y, w, h);
-      ctx.drawImage(img, geometry.x, geometry.y, geometry.width, geometry.height);
-    } else {
-      ctx.fillStyle = "rgba(255,255,255,.13)";
-      ctx.fillRect(x, y, w, h);
-      ctx.fillStyle = "#fff";
-      ctx.font = "17px " + font;
-      ctx.textAlign = "center";
-      ctx.fillText("無圖片", x + w / 2, y + h / 2);
-    }
+    ctx.fillStyle = "rgba(255,255,255,.12)";
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = "#fff";
+    ctx.font = "17px " + font;
+    ctx.textAlign = "center";
+    ctx.fillText("無圖片", x + w / 2, y + h / 2);
     ctx.restore();
   }
   async function portraitFor(id) {
     if (!id) return null;
     const url = sourceBase + encodeURIComponent(id) + "/" + encodeURIComponent(id);
-    return (await image(url + "-thum-140.png")) || (await image(url + "-thum.png"));
+    // Native CCRenderTexture thumbnail path is "-thum.png".
+    // "thum-140" is an alternative source with a different pixel resolution;
+    // only try it for older assets which do not have the native standard file.
+    return (await image(url + "-thum.png")) || (await image(url + "-thum-140.png"));
   }
   async function assetsForRows(rows) {
     const fixed = {
       background: await image("./image/bg.jpg"),
-      top: await image("./image/frame_top.png")
+      top: await image("./image/frame_top.png"),
+      mask: await image("./image/portrait_mask_native.png")
     };
     const types = ["9star","ultra","hyper"];
     await Promise.all(types.map(async (type) => {
       fixed["bottom_" + type] = await image("./image/frame_bottom_" + type + ".png");
       fixed["star_" + type] = await image("./image/star_" + type + ".png");
     }));
+    if (!fixed.mask) throw new Error("無法載入遊戲原始角色裁切遮罩 portrait_mask_native.png");
     const portraits = await Promise.all(rows.map(r => portraitFor(r.unit && r.unit.id)));
     return {fixed, portraits};
   }
@@ -345,7 +368,7 @@
       // Bottom frame is slightly taller than square; match source proportion
       // while keeping it aligned inside the clipping square.
       if (bottom) frameLayer(bottom, x + 2, y + 1, w - 4, w - 2);
-      drawPortrait(img, row.unit, x + 8, y + 5, w - 16, w - 15);
+      drawPortrait(img, row.unit, fixed.mask, x + 8, y + 5, w - 16, w - 15);
       // Put the game frame over the sprite, not on the entire rank row.
       if (fixed.top) frameLayer(fixed.top, x, y, w, w);
       const star = fixed["star_" + kind];
