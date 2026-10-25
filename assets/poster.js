@@ -171,31 +171,35 @@
   }
   function drawPortrait(img, meta, x, y, w, h) {
     ctx.save();
-    roundBox(x, y, w, h, 14);
+    // The thumbnail must stay within the rounded frame; no pixel may spill into
+    // the neighbouring count or outside the dark content area of bg.jpg.
+    roundBox(x, y, w, h, 13);
     ctx.clip();
     if (img) {
-      // Head-first crop: retain transparent space along the top and sides;
-      // the enlarged body's lower portion is clipped at the card bottom.
-      // Do not bottom-align the full sprite (that would hide the face).
-      const rawRatio = Number(meta && meta.sizeRatio);
-      const scale = Number.isFinite(rawRatio) ? Math.max(.8, Math.min(1.25, rawRatio)) : 1;
-      const drawH = h * 1.40 * scale;
+      // The face positioning and sprite scaling come from rangerbook's
+      // res/v2/projectiles.json -> visual.faceCenter.{x,y}, visual.scale
+      // (mirrored in data/ranger-metadata.json).
+      const scaleValue = Number(meta?.sizeRatio);
+      const ratio = Number.isFinite(scaleValue) && scaleValue > 0
+        ? Math.min(1.35, Math.max(.75, scaleValue)) : 1;
+      const centerX = Number(meta?.faceCenter?.x);
+      const centerY = Number(meta?.faceCenter?.y);
+      const fx = Number.isFinite(centerX) ? Math.max(0, Math.min(1, centerX)) : .5;
+      const fy = Number.isFinite(centerY) ? Math.max(0, Math.min(1, centerY)) : .6;
+      // Preserve image aspect ratio, zoom to a head-and-shoulders crop. The image
+      // extends beyond the *inner* portrait viewport but is always clipped.
+      const drawH = h * 1.40 * ratio;
       const drawW = drawH * img.naturalWidth / img.naturalHeight;
-      const fx = Number(meta && meta.faceCenter && meta.faceCenter.x);
-      const fy = Number(meta && meta.faceCenter && meta.faceCenter.y);
-      const anchorX = Number.isFinite(fx) ? fx : .5;
-      const anchorY = Number.isFinite(fy) ? fy : .6;
-      const topMargin = Math.max(4, Math.min(14, 8 + (.62 - anchorY) * 55));
-      const px = x + w / 2 - drawW * anchorX;
-      ctx.drawImage(img, px, y + topMargin, drawW, drawH);
+      const px = x + w / 2 - drawW * fx;
+      const py = y + Math.max(3, Math.min(13, 7 + (.62 - fy) * 48));
+      ctx.drawImage(img, px, py, drawW, drawH);
     } else {
-      ctx.fillStyle = "rgba(255,255,255,.14)";
+      ctx.fillStyle = "rgba(255,255,255,.13)";
       ctx.fillRect(x, y, w, h);
       ctx.fillStyle = "#fff";
+      ctx.font = "17px " + font;
       ctx.textAlign = "center";
-      ctx.font = "18px " + font;
-      ctx.fillText("無圖片", x+w/2, y+h/2);
-      ctx.textAlign = "left";
+      ctx.fillText("無圖片", x + w / 2, y + h / 2);
     }
     ctx.restore();
   }
@@ -217,66 +221,87 @@
     const portraits = await Promise.all(rows.map(r => portraitFor(r.unit && r.unit.id)));
     return {fixed, portraits};
   }
-  function drawPoster(rows, assets, date, source) {
+  // Native poster size is 1920×1080; matching the supplied 960×540 sample.
+  // Four columns, five rows each, filled vertically before moving right.
+  const POSTER_LAYOUT = Object.freeze({
+    firstX: 182, firstY: 291, columnStep: 396, rowStep: 126,
+    avatarSize: 121, countGap: 14, maxCountWidth: 237
+  });
+  function usageColor(rank) {
+    if (rank === 1) return "#b94cea";
+    if (rank <= 5) return "#ff1838";
+    if (rank <= 9) return "#ffbc00";
+    if (rank <= 14) return "#7dd13f";
+    if (rank === 15) return "#00b6eb";
+    return "#ffffff";
+  }
+  function drawPoster(rows, assets, date) {
     const fixed = assets.fixed;
     ctx.clearRect(0, 0, W, H);
     if (fixed.background) drawCover(fixed.background, 0, 0, W, H);
     else { ctx.fillStyle = "#101d3a"; ctx.fillRect(0, 0, W, H); }
-    const shade = ctx.createLinearGradient(0, 0, 0, 270);
-    shade.addColorStop(0, "rgba(5,10,30,.85)");
-    shade.addColorStop(1, "rgba(5,10,30,0)");
-    ctx.fillStyle = shade; ctx.fillRect(0, 0, W, 280);
-    ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
-    ctx.shadowColor = "rgba(0,0,0,.85)"; ctx.shadowBlur = 16;
-    ctx.fillStyle = "#fff";
-    ctx.font = "bold 74px " + font;
-    ctx.fillText("傳奇 PvP 熱門角色 TOP 20", W / 2, 112);
-    ctx.font = "bold 36px " + font;
-    ctx.fillText(displayDate(date) + "  全段位傳奇 PvP 結算統計", W / 2, 174);
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = "rgba(255,255,255,.83)";
-    ctx.font = "24px " + font;
-    ctx.fillText("前 200 名玩家 A / B 隊伍 · Ranger 使用次數排名", W / 2, 216);
+
+    // Single title only. It fits inside the top rounded header of bg.jpg.
+    const [year, month, day] = date.split("-").map(Number);
+    const title = "本月傳奇熱門寵(" + month + "月" + day + "日)";
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.shadowColor = "rgba(0,0,0,.87)";
+    ctx.shadowBlur = 9;
+    ctx.shadowOffsetY = 4;
+    ctx.fillStyle = "#ffffff";
+    let titleSize = 117;
+    do {
+      ctx.font = "bold " + titleSize + "px " + font;
+      if (ctx.measureText(title).width <= 1590) break;
+      titleSize -= 2;
+    } while (titleSize > 70);
+    ctx.fillText(title, W / 2, 210);
+    ctx.restore();
 
     let missing = 0;
-    // Ranking order is column-major: 1-5 down, 6-10 down, ... 16-20 down.
     rows.forEach((row, i) => {
       const col = Math.floor(i / 5), line = i % 5;
-      const x = 148 + col * 430, y = 300 + line * 132;
-      const w = 414, h = 122;
-      ctx.fillStyle = "rgba(5,13,28,.76)";
-      roundBox(x,y,w,h,20); ctx.fill();
-      ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(255,255,255,.28)";ctx.stroke();
+      const x = POSTER_LAYOUT.firstX + col * POSTER_LAYOUT.columnStep;
+      const y = POSTER_LAYOUT.firstY + line * POSTER_LAYOUT.rowStep;
+      const w = POSTER_LAYOUT.avatarSize;
       const img = assets.portraits[i];
       if (!img) missing++;
+
       const kind = starCategory(row.unit);
-      const bx = x + 7, by = y + 5, bw = 111, bh = 111;
-      frameLayer(fixed["bottom_" + kind],bx,by,bw,bh);
-      drawPortrait(img,row.unit,bx+6,by+5,bw-12,bh-10);
-      frameLayer(fixed.top,bx,by,bw,bh);
+      const bottom = fixed["bottom_" + kind];
+      // Clip the COMPLETE thumbnail + frame + star group, so oversized layers
+      // never bleed into other ranks or beyond the provided content border.
+      ctx.save();
+      roundBox(x, y, w, w, 15);
+      ctx.clip();
+      // Bottom frame is slightly taller than square; match source proportion
+      // while keeping it aligned inside the clipping square.
+      if (bottom) frameLayer(bottom, x + 2, y + 1, w - 4, w - 2);
+      drawPortrait(img, row.unit, x + 8, y + 5, w - 16, w - 15);
+      // Put the game frame over the sprite, not on the entire rank row.
+      if (fixed.top) frameLayer(fixed.top, x, y, w, w);
       const star = fixed["star_" + kind];
       if (star) {
-        // Preserve star aspect ratio; place over the lower portion of the avatar.
-        const sh = 29, sw = Math.min(118, sh * star.naturalWidth / star.naturalHeight);
-        ctx.drawImage(star, bx + (bw-sw)/2, by + bh-sh-3, sw, sh);
+        // Original badge is intentionally smaller than in the previous version.
+        const badgeW = kind === "9star" ? 99 : 88;
+        const badgeH = badgeW * star.naturalHeight / star.naturalWidth;
+        ctx.drawImage(star, x + (w - badgeW) / 2, y + w - badgeH - 4, badgeW, badgeH);
       }
-      ctx.shadowColor = "rgba(0,0,0,.8)";ctx.shadowBlur = 5;
-      ctx.fillStyle = i < 3 ? "#ffe69f" : "#d9e8ff";
-      ctx.font = "bold 27px " + font; ctx.textAlign = "left";
-      ctx.fillText(String(i+1).padStart(2,"0"), x + 127, y + 33);
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = "#fff";
-      ctx.font = "bold 21px " + font;
-      caption(row.name, x + 177, y + 34, 224, 2);
-      ctx.fillStyle = "#ffe19d";
-      ctx.font = "bold 26px " + font;
-      ctx.fillText(row.count.toLocaleString("zh-TW") + " 次", x + 177, y + 103);
+      ctx.restore();
+
+      // Only number of appearances, no rank/name/source/caption.
+      const countX = x + w + POSTER_LAYOUT.countGap;
+      const count = Number(row.count).toLocaleString("zh-TW") + "隻";
+      ctx.save();
+      ctx.textBaseline = "middle";
+      ctx.textAlign = "left";
+      ctx.fillStyle = usageColor(i + 1);
+      ctx.font = "bold 53px " + font;
+      ctx.fillText(count, countX, y + w / 2 + 4, POSTER_LAYOUT.maxCountWidth);
+      ctx.restore();
     });
-    ctx.textAlign = "right";
-    ctx.font = "18px " + font;
-    ctx.fillStyle = "rgba(255,255,255,.85)";
-    ctx.fillText("來源：LRpvprank｜" + (source.loadedPlayers || 0) + " 名玩家｜資料時間 " + (source.generatedAtTaipei || "未知"), W - 54, H - 24);
-    ctx.textAlign = "left";
     return missing;
   }
   async function generate() {
@@ -289,8 +314,8 @@
     ui.download.disabled = true;
     showStatus("讀取 " + date + " 的資料、王漢宗綜藝體繁字型與角色縮圖…");
     try {
-      const faces = await document.fonts.load('32px "LRPosterWangZonYi"', "傳奇熱門角色排名");
-      if (!faces.length || !document.fonts.check('32px "LRPosterWangZonYi"', "傳奇熱門角色排名")) {
+      const faces = await document.fonts.load('bold 64px "LRPosterWangZonYi"', "本月傳奇熱門寵");
+      if (!faces.length || !document.fonts.check('bold 64px "LRPosterWangZonYi"', "本月傳奇熱門寵")) {
         throw new Error("王漢宗綜藝體繁未載入，避免輸出錯誤字體；請確認網路連線");
       }
       const data = await json(entry.file === "latest" ? "./data/latest.json" : "./data/history/" + encodeURIComponent(entry.file));
@@ -306,10 +331,10 @@
       }));
       if (rows.length !== 20) throw new Error("此快照不足 20 種 Ranger，不能產生完整前 20 名");
       const assets = await assetsForRows(rows);
-      const missing = drawPoster(rows, assets, date, data);
+      const missing = drawPoster(rows, assets, date);
       generatedDate = date;
       ui.download.disabled = false;
-      ui.source.textContent = "資料時間：" + (data.generatedAtTaipei || "未知") + "（GMT+8）；成功讀取玩家：" + (data.loadedPlayers ?? "未知") + "；統計範圍：前 200 名玩家 A/B 隊伍。";
+      ui.source.textContent = "";
       if (missing) showStatus("已生成圖像，但有 " + missing + " 張角色縮圖無法從 GitHub 載入，已保留佔位符。", true);
       else showStatus("前 20 名排名圖生成完成，可直接下載 PNG。");
     } catch (error) {
