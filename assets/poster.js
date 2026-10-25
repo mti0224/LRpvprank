@@ -15,6 +15,10 @@
   const sourceBase = "https://raw.githubusercontent.com/mti0224/rangerbook_res/main/";
   const font = '"LRPosterWangZonYi","王漢宗綜藝體繁","HanWangZonYi",sans-serif';
   const images = new Map();
+  const HISTORY_BASE = "https://pvp-data.warmycat.com/history/";
+  const historySnapshots = new Map();
+  const imageMetadataById = new Map();
+  let historyWarning = "";
   let unitMetadata = null;
   let dateEntries = [];
   let initialized = false;
@@ -76,7 +80,9 @@
     for (const [id, m] of Object.entries(units)) {
       if (!m || !m.name) continue;
       const entries = byName.get(m.name) || [];
-      entries.push({id, ...m});
+      const record = {id, ...m};
+      entries.push(record);
+      imageMetadataById.set(id, record);
       byName.set(m.name, entries);
     }
     return byName;
@@ -99,35 +105,82 @@
     };
     return [...choices].sort((a, b) => score(b) - score(a))[0];
   }
+  async function loadRangerbookHistory() {
+    const index = await json(HISTORY_BASE + "index.json");
+    const files = Array.isArray(index.files) ? index.files
+      .filter(file => /^\d{4}-\d{2}\.json$/.test(file)) : [];
+    if (!files.length) return 0;
+    const results = await Promise.allSettled(files.map(file => json(HISTORY_BASE + encodeURIComponent(file))));
+    let count = 0;
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      if (result.status !== "fulfilled") {
+        console.warn("Could not fetch Rangerbook historical month:", files[i], result.reason);
+        continue;
+      }
+      const snapshots = result.value?.snapshots;
+      if (!Array.isArray(snapshots)) continue;
+      for (const snapshot of snapshots) {
+        const date = safeDate(snapshot?.date);
+        const rangers = snapshot?.scopes?.all?.rangers;
+        if (!date || !rangers || typeof rangers !== "object" ||
+            Array.isArray(rangers) || !Object.keys(rangers).length) continue;
+        historySnapshots.set(date, snapshot);
+        count += 1;
+      }
+    }
+    if (!count) throw new Error("歷史月份檔案沒有可用的全段位資料");
+    if (results.some(r => r.status === "rejected")) {
+      historyWarning = "部分月份暫時無法載入，日期清單可能不完整。";
+    }
+    return count;
+  }
   async function initialize() {
     initialized = true;
     ui.run.disabled = true;
-    showStatus("載入結算日期與角色圖片對照資料…");
+    showStatus("讀取 Rangerbook 歷史日期與角色圖片資料…");
     try {
       const [metadata, listing, latest] = await Promise.all([
         loadMetadata(),
-        json("./data/history/index.json"),
-        json("./data/latest.json")
+        json("./data/history/index.json").catch(() => ({dates: []})),
+        json("./data/latest.json").catch(() => null)
       ]);
       unitMetadata = metadata;
-      dateEntries = (Array.isArray(listing.dates) ? listing.dates : [])
-        .filter((e) => safeDate(e.date) && e.file === e.date + ".json" && (!e.league || e.league === "LEGEND"))
-        .sort((a, b) => b.date.localeCompare(a.date));
-      const latestDate = localDateString(latest.generatedAtTaipei);
-      if (latestDate && !dateEntries.some(e => e.date === latestDate)) {
-        dateEntries.unshift({date: latestDate, file: "latest", generatedAtTaipei: latest.generatedAtTaipei, league: "LEGEND"});
-        dateEntries.sort((a, b) => b.date.localeCompare(a.date));
+      const localEntries = (Array.isArray(listing?.dates) ? listing.dates : [])
+        .filter(e => safeDate(e.date) && e.file === e.date + ".json" && (!e.league || e.league === "LEGEND"))
+        .map(e => ({...e, kind: "local"}));
+      const byDate = new Map(localEntries.map(e => [e.date, e]));
+      const latestDate = localDateString(latest?.generatedAtTaipei);
+      if (latestDate && latest?.league === "LEGEND") {
+        byDate.set(latestDate, {
+          date: latestDate, file: "latest",
+          generatedAtTaipei: latest.generatedAtTaipei, kind: "latest"
+        });
       }
+      try {
+        await loadRangerbookHistory();
+        // Prefer Rangerbook's archived data for all historical days; keep
+        // today's newer local snapshot if Rangerbook has not archived it yet.
+        for (const [date, snapshot] of historySnapshots) {
+          if (date === latestDate) continue;
+          byDate.set(date, {date, kind: "history", snapshot});
+        }
+      } catch (error) {
+        console.warn("Rangerbook historical API unavailable:", error);
+        historyWarning = "Rangerbook 歷史 API 暫時不可用，僅顯示 LRpvprank 已保存的快照：" + error.message;
+      }
+      dateEntries = [...byDate.values()].sort((a, b) => b.date.localeCompare(a.date));
       ui.date.replaceChildren();
       for (const entry of dateEntries) {
-        const opt = document.createElement("option");
-        opt.value = entry.date;
-        opt.textContent = displayDate(entry.date);
-        ui.date.appendChild(opt);
+        const option = document.createElement("option");
+        option.value = entry.date;
+        option.textContent = displayDate(entry.date);
+        ui.date.appendChild(option);
       }
-      if (!dateEntries.length) throw new Error("尚未保存任何可選的 PvP 日期");
+      if (!dateEntries.length) throw new Error("目前沒有任何可用的傳奇 PvP 快照");
       ui.run.disabled = false;
-      showStatus("已載入 " + dateEntries.length + " 個可選日期。選擇日期後點擊生成。");
+      showStatus("可選擇 " + dateEntries.length + " 個歷史日期。"
+        + (historyWarning ? " " + historyWarning : ""));
       await generate();
     } catch (error) {
       console.error(error);
@@ -169,30 +222,33 @@
     }
     capped.forEach((line, i) => ctx.fillText(line, x, y + i * 25));
   }
+  function portraitGeometry(img, meta, x, y, w, h) {
+    const raw = Number(meta?.sizeRatio);
+    const ratio = Number.isFinite(raw) && raw > 0 ? Math.max(.72, Math.min(1.4, raw)) : 1;
+    const faceX = Number(meta?.faceCenter?.x);
+    const faceY = Number(meta?.faceCenter?.y);
+    const fx = Number.isFinite(faceX) ? Math.max(.1, Math.min(.9, faceX)) : .5;
+    const fy = Number.isFinite(faceY) ? Math.max(.1, Math.min(.9, faceY)) : .6;
+    // faceCenter uses the native Cocos2d-X bottom-origin Y coordinate. Convert
+    // it to the downward-positive thumbnail image coordinate: 1 - faceCenterY.
+    const scaledH = h * 1.72 * ratio;
+    const scaledW = scaledH * img.naturalWidth / img.naturalHeight;
+    const targetFaceX = x + w * .51;
+    const targetFaceY = y + h * .43;
+    return {
+      x: targetFaceX - fx * scaledW,
+      y: targetFaceY - (1 - fy) * scaledH,
+      width: scaledW,
+      height: scaledH
+    };
+  }
   function drawPortrait(img, meta, x, y, w, h) {
     ctx.save();
-    // The thumbnail must stay within the rounded frame; no pixel may spill into
-    // the neighbouring count or outside the dark content area of bg.jpg.
     roundBox(x, y, w, h, 13);
     ctx.clip();
     if (img) {
-      // The face positioning and sprite scaling come from rangerbook's
-      // res/v2/projectiles.json -> visual.faceCenter.{x,y}, visual.scale
-      // (mirrored in data/ranger-metadata.json).
-      const scaleValue = Number(meta?.sizeRatio);
-      const ratio = Number.isFinite(scaleValue) && scaleValue > 0
-        ? Math.min(1.35, Math.max(.75, scaleValue)) : 1;
-      const centerX = Number(meta?.faceCenter?.x);
-      const centerY = Number(meta?.faceCenter?.y);
-      const fx = Number.isFinite(centerX) ? Math.max(0, Math.min(1, centerX)) : .5;
-      const fy = Number.isFinite(centerY) ? Math.max(0, Math.min(1, centerY)) : .6;
-      // Preserve image aspect ratio, zoom to a head-and-shoulders crop. The image
-      // extends beyond the *inner* portrait viewport but is always clipped.
-      const drawH = h * 1.40 * ratio;
-      const drawW = drawH * img.naturalWidth / img.naturalHeight;
-      const px = x + w / 2 - drawW * fx;
-      const py = y + Math.max(3, Math.min(13, 7 + (.62 - fy) * 48));
-      ctx.drawImage(img, px, py, drawW, drawH);
+      const geometry = portraitGeometry(img, meta, x, y, w, h);
+      ctx.drawImage(img, geometry.x, geometry.y, geometry.width, geometry.height);
     } else {
       ctx.fillStyle = "rgba(255,255,255,.13)";
       ctx.fillRect(x, y, w, h);
@@ -241,23 +297,33 @@
     if (fixed.background) drawCover(fixed.background, 0, 0, W, H);
     else { ctx.fillStyle = "#101d3a"; ctx.fillRect(0, 0, W, H); }
 
-    // Single title only. It fits inside the top rounded header of bg.jpg.
-    const [year, month, day] = date.split("-").map(Number);
-    const title = "本月傳奇熱門寵(" + month + "月" + day + "日)";
+    // Keep the title bold while making the date visibly smaller.
+    // Measure both text segments to center the complete heading as one group.
+    const [, month, day] = date.split("-").map(Number);
+    const heading = "本月傳奇熱門寵";
+    const dateText = "(" + month + "月" + day + "日)";
     ctx.save();
-    ctx.textAlign = "center";
+    ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
-    ctx.shadowColor = "rgba(0,0,0,.87)";
+    ctx.shadowColor = "rgba(0,0,0,.85)";
     ctx.shadowBlur = 9;
     ctx.shadowOffsetY = 4;
-    ctx.fillStyle = "#ffffff";
-    let titleSize = 117;
+    ctx.fillStyle = "#fff";
+    let mainSize = 117, daySize = 77;
+    let mainWidth, dateWidth;
     do {
-      ctx.font = "bold " + titleSize + "px " + font;
-      if (ctx.measureText(title).width <= 1590) break;
-      titleSize -= 2;
-    } while (titleSize > 70);
-    ctx.fillText(title, W / 2, 210);
+      ctx.font = "bold " + mainSize + "px " + font;
+      mainWidth = ctx.measureText(heading).width;
+      ctx.font = "bold " + daySize + "px " + font;
+      dateWidth = ctx.measureText(dateText).width;
+      if (mainWidth + 14 + dateWidth <= 1590) break;
+      mainSize -= 2; daySize = Math.round(mainSize * .66);
+    } while (mainSize > 72);
+    const originX = (W - mainWidth - 14 - dateWidth) / 2;
+    ctx.font = "bold " + mainSize + "px " + font;
+    ctx.fillText(heading, originX, 207);
+    ctx.font = "bold " + daySize + "px " + font;
+    ctx.fillText(dateText, originX + mainWidth + 14, 207);
     ctx.restore();
 
     let missing = 0;
@@ -318,24 +384,43 @@
       if (!faces.length || !document.fonts.check('bold 64px "LRPosterWangZonYi"', "本月傳奇熱門寵")) {
         throw new Error("王漢宗綜藝體繁未載入，避免輸出錯誤字體；請確認網路連線");
       }
-      const data = await json(entry.file === "latest" ? "./data/latest.json" : "./data/history/" + encodeURIComponent(entry.file));
-      if (localDateString(data.generatedAtTaipei) !== date) throw new Error("快照日期與所選日期不一致");
-      if (String(data.league).toUpperCase() !== "LEGEND") throw new Error("不是傳奇段位快照");
-      const sorted = Array.isArray(data.sorted && data.sorted.all)
-        ? data.sorted.all
-        : Object.entries((data.snapshots && data.snapshots.all) || {}).map(([name, count]) => ({name,count})).sort((a,b) => b.count-a.count);
-      const rows = sorted.slice(0, 20).map(r => ({
-        name: String(r.name),
-        count: Number(r.count)||0,
-        unit: chooseUnit(String(r.name))
-      }));
+      let rows;
+      if (entry.kind === "history") {
+        // Rangerbook daily history is keyed by actual unitCode, preventing
+        // incorrect name-to-ID matches and preserving exact daily snapshots.
+        const snapshot = entry.snapshot || historySnapshots.get(date);
+        const all = snapshot?.scopes?.all?.rangers;
+        if (!all || typeof all !== "object") throw new Error("找不到當日全段位角色統計");
+        rows = Object.entries(all)
+          .map(([id, record]) => ({
+            name: imageMetadataById.get(id)?.name || id,
+            count: Number(record?.appearanceCount) || 0,
+            unit: imageMetadataById.get(id) || {id, name: id, star:"9星"}
+          }))
+          .filter(row => row.count > 0)
+          .sort((a,b) => b.count-a.count || a.unit.id.localeCompare(b.unit.id))
+          .slice(0,20);
+      } else {
+        const data = await json(entry.kind === "latest"
+          ? "./data/latest.json" : "./data/history/" + encodeURIComponent(entry.file));
+        if (localDateString(data.generatedAtTaipei) !== date) throw new Error("快照日期與所選日期不一致");
+        if (String(data.league).toUpperCase() !== "LEGEND") throw new Error("不是傳奇段位快照");
+        const sorted = Array.isArray(data.sorted?.all)
+          ? data.sorted.all
+          : Object.entries(data.snapshots?.all || {}).map(([name,count]) => ({name,count}))
+              .sort((a,b)=> b.count-a.count || a.name.localeCompare(b.name));
+        rows = sorted.slice(0,20).map(row => ({
+          name: String(row.name), count: Number(row.count)||0,
+          unit: chooseUnit(String(row.name))
+        }));
+      }
       if (rows.length !== 20) throw new Error("此快照不足 20 種 Ranger，不能產生完整前 20 名");
       const assets = await assetsForRows(rows);
       const missing = drawPoster(rows, assets, date);
       generatedDate = date;
       ui.download.disabled = false;
       if (missing) showStatus("已生成圖像，但有 " + missing + " 張角色縮圖無法從 GitHub 載入，已保留佔位符。", true);
-      else showStatus("前 20 名排名圖生成完成，可直接下載 PNG。");
+      else showStatus("前 20 名排名圖生成完成，可直接下載 PNG。" + (historyWarning ? " " + historyWarning : ""));
     } catch (error) {
       console.error(error);
       showStatus("生成失敗：" + error.message, true);
