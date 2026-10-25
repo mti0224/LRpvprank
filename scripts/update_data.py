@@ -12,6 +12,8 @@ RANGERBOOK_INDEX_URL = (
 LEAGUE = "LEGEND"
 PLAYER_LIMIT = 200
 OUTPUT_PATH = Path("data/latest.json")
+HISTORY_DIR = Path("data/history")
+HISTORY_INDEX = HISTORY_DIR / "index.json"
 
 UNIT_CODE_RE = re.compile(r"^u\d+[a-z]?(?:-[a-z0-9_]+)?$", re.IGNORECASE)
 
@@ -256,7 +258,42 @@ def main():
     }
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")
+    serialized = json.dumps(output, ensure_ascii=False, indent=2) + "\n"
+    OUTPUT_PATH.write_text(serialized, encoding="utf-8")
+
+    # Each Taiwan-local day is a selectable snapshot. Keep its latest successful
+    # collection, rather than offering arbitrary dates with no archived data.
+    day = source_tw.strftime("%Y-%m-%d")
+    HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+    day_file = HISTORY_DIR / f"{day}.json"
+    day_file.write_text(serialized, encoding="utf-8")
+
+    records = []
+    for path in HISTORY_DIR.glob("????-??-??.json"):
+        try:
+            archived = json.loads(path.read_text(encoding="utf-8"))
+            recorded = datetime.strptime(path.stem, "%Y-%m-%d").strftime("%Y-%m-%d")
+            if (
+                not isinstance(archived, dict)
+                or archived.get("league") != "LEGEND"
+                or str(archived.get("generatedAtTaipei", ""))[:10] != recorded
+            ):
+                continue
+            records.append({
+                "date": recorded,
+                "file": path.name,
+                "generatedAtTaipei": archived.get("generatedAtTaipei"),
+                "loadedPlayers": archived.get("loadedPlayers"),
+                "league": "LEGEND",
+            })
+        except (OSError, ValueError, TypeError):
+            continue
+    records.sort(key=lambda item: item["date"], reverse=True)
+    HISTORY_INDEX.write_text(
+        json.dumps({"schemaVersion": 1, "dates": records}, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    print(f"Updated {day_file} and indexed {len(records)} historical dates")
     print(
         f"Wrote {OUTPUT_PATH}: source={source_generated_at}, "
         f"league={league}, players={loaded_players}/{ranking_count}, "
