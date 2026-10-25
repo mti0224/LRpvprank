@@ -13,7 +13,7 @@
   const W = 1920, H = 1080;
   const ctx = ui.canvas.getContext("2d");
   const sourceBase = "https://raw.githubusercontent.com/mti0224/rangerbook_res/main/";
-  const font = '"Noto Sans TC","Microsoft JhengHei",sans-serif';
+  const font = '"LRPosterWangZonYi","王漢宗綜藝體繁","HanWangZonYi",sans-serif';
   const images = new Map();
   let unitMetadata = null;
   let dateEntries = [];
@@ -284,7 +284,16 @@
     loading = true;
     ui.run.disabled = true;
     ui.download.disabled = true;
-    showStatus("讀取 " + date + " 的資料與角色縮圖…");
+    showStatus("讀取 " + date + " 的資料、王漢宗綜藝體繁字型與角色縮圖…");
+    try {
+      const faces = await document.fonts.load('32px "LRPosterWangZonYi"', "傳奇熱門角色排名");
+      if (!faces.length || !document.fonts.check('32px "LRPosterWangZonYi"', "傳奇熱門角色排名")) {
+        throw new Error("王漢宗綜藝體繁未載入，避免輸出錯誤字體；請確認網路連線");
+      }
+    } catch (error) {
+      throw new Error("無法載入王漢宗綜藝體繁字體：" + error.message);
+    }
+
     try {
       const data = await json(entry.file === "latest" ? "./data/latest.json" : "./data/history/" + encodeURIComponent(entry.file));
       if (localDateString(data.generatedAtTaipei) !== date) throw new Error("快照日期與所選日期不一致");
