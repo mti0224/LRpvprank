@@ -6,6 +6,7 @@
   <title>LR PvP Rank Usage</title>
   <meta name="description" content="LINE Rangers 傳奇段位 PvP 角色使用率統計工具">
   <link rel="stylesheet" href="./assets/style.css">
+  <link rel="stylesheet" href="./assets/poster.css">
 </head>
 <body>
   <header class="site-header">
@@ -16,7 +17,13 @@
     </div>
   </header>
 
+  <nav class="view-tabs" aria-label="網站分頁">
+    <button type="button" id="usageTab" class="view-tab is-active" aria-controls="usageView" aria-selected="true" role="tab">使用率統計</button>
+    <button type="button" id="posterTab" class="view-tab" aria-controls="posterView" aria-selected="false" role="tab">全段位前 20 名排名圖</button>
+  </nav>
+
   <main class="page">
+    <div id="usageView" class="view-panel" role="tabpanel">
     <section class="panel controls">
       <h2>統計設定</h2>
 
@@ -114,5 +121,6 @@
   </footer>
 
   <script src="./assets/app.js"></script>
+  <script src="./assets/poster.js"></script>
 </body>
 </html>
