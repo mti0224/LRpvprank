@@ -1,0 +1,40 @@
+name: Verify PvP historical poster in browser
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "assets/poster.js"
+      - "assets/poster.css"
+      - "tests/poster-browser.test.cjs"
+      - ".github/workflows/poster-browser-check.yml"
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+      - name: Install headless browser controller
+        run: npm install --no-save --no-package-lock playwright-core@1.56.1
+      - name: Launch local static server
+        run: |
+          mkdir -p artifacts
+          python3 -m http.server 8765 --bind 127.0.0.1 > artifacts/http.log 2>&1 &
+          sleep 2
+      - name: Validate historical dates, font loading and 1920×1080 poster
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/poster-browser.test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: poster-browser-evidence
+          path: artifacts/
+          retention-days: 7
