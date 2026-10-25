@@ -290,11 +290,6 @@
       if (!faces.length || !document.fonts.check('32px "LRPosterWangZonYi"', "傳奇熱門角色排名")) {
         throw new Error("王漢宗綜藝體繁未載入，避免輸出錯誤字體；請確認網路連線");
       }
-    } catch (error) {
-      throw new Error("無法載入王漢宗綜藝體繁字體：" + error.message);
-    }
-
-    try {
       const data = await json(entry.file === "latest" ? "./data/latest.json" : "./data/history/" + encodeURIComponent(entry.file));
       if (localDateString(data.generatedAtTaipei) !== date) throw new Error("快照日期與所選日期不一致");
       if (String(data.league).toUpperCase() !== "LEGEND") throw new Error("不是傳奇段位快照");
