@@ -7,7 +7,7 @@
     oldView: $("#usageView"), newView: $("#posterView"),
     date: $("#posterDateSelect"), run: $("#posterGenerateBtn"),
     download: $("#posterDownloadBtn"), status: $("#posterStatus"),
-    source: $("#posterSource"), canvas: $("#posterCanvas")
+    canvas: $("#posterCanvas")
   };
   if (!ui.canvas || !ui.newTab) return;
   const W = 1920, H = 1080;
@@ -334,12 +334,10 @@
       const missing = drawPoster(rows, assets, date);
       generatedDate = date;
       ui.download.disabled = false;
-      ui.source.textContent = "";
       if (missing) showStatus("已生成圖像，但有 " + missing + " 張角色縮圖無法從 GitHub 載入，已保留佔位符。", true);
       else showStatus("前 20 名排名圖生成完成，可直接下載 PNG。");
     } catch (error) {
       console.error(error);
-      ui.source.textContent = "";
       showStatus("生成失敗：" + error.message, true);
     } finally {
       ui.run.disabled = false;
