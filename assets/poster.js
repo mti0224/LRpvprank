@@ -460,7 +460,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "legend-pvp-top20-" + generatedDate + ".png";
+      a.download = "PvPUsage_" + generatedDate.replace(/-/g, "") + ".png";
       document.body.appendChild(a);a.click();a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 5000);
     }, "image/png");
