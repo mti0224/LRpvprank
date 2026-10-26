@@ -24,6 +24,8 @@ assert(poster.includes("daySize = 77"), "Date font must be smaller than title");
 assert(poster.includes('HISTORY_BASE = "https://pvp-data.warmycat.com/history/"'), "Rangerbook history endpoint missing");
 assert(poster.includes('snapshot?.scopes?.all?.rangers'), "Historical full-rank usage must come from Rangerbook");
 assert(poster.includes('historySnapshots'), "Historical dates must be selectable");
+assert(poster.includes('generatedDate = date;'), "Download must use the date of the generated poster");
+assert(poster.includes('a.download = "PvPUsage_" + generatedDate.replace(/-/g, "") + ".png";'), "PNG filename must use selected date in YYYYMMDD format");
 assert(poster.includes('data/ranger-metadata.json'), "Must use rangerbook metadata");
 assert(poster.includes('meta?.faceCenter?.x') && poster.includes('meta?.faceCenter?.y') && poster.includes('meta?.sizeRatio'), "Image crop must use original metadata");
 assert(poster.includes('maskHeight / 2 - (1 - ay) * height'), "Native bottom-origin anchor must be used");
