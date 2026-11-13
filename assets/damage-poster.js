@@ -28,7 +28,9 @@
   let metadata = {};
   let data = null;
   let initialized = false;
+  let initializing = false;
   let busy = false;
+  let rerunRequested = false;
   let generated = null;
 
   function status(message, error = false) {
@@ -234,7 +236,7 @@
     ctx.restore();
   }
   async function draw() {
-    if (busy) return;
+    if (busy) {rerunRequested=true;return;}
     busy=true;ui.run.disabled=true;ui.download.disabled=true;generated=null;
     const element=ui.element.value,star=ui.star.value;
     status("正在產生 "+(star==="star9"?"九星":"超進化8星")+THEME[element].name+"技能傷害排名圖…");
@@ -250,6 +252,9 @@
         image("./image/star_"+(star==="star9"?"9star":"hyper")+".png")
       ]);
       if(!mask) throw new Error("缺少原始角色頭像遮罩 portrait_mask_native.png");
+      if (element!==ui.element.value || star!==ui.star.value) {
+        rerunRequested=true;return; // A filter changed while images were loading.
+      }
       drawPoster(rows,{portraits,background,mask,star:starImage},THEME[element],element,star);
       renderList(rows);
       const stamp=data.generatedAtUtc?data.generatedAtUtc.replace("T"," ").slice(0,16)+" UTC":"未知";
@@ -262,7 +267,10 @@
     } catch(error) {
       console.error(error);
       status("生成失敗："+error.message,true);
-    } finally {busy=false;ui.run.disabled=false;}
+    } finally {
+      busy=false;ui.run.disabled=false;
+      if (rerunRequested) {rerunRequested=false;void draw();}
+    }
   }
   function renderList(rows) {
     ui.list.replaceChildren();
@@ -274,17 +282,19 @@
     });
   }
   async function initialize() {
-    initialized=true;
+    if (initializing || initialized) return;
+    initializing=true;
     try {
       status("正在讀取角色頭像位置與技能傷害排行榜…");
       const meta=await loadJSON("./data/ranger-metadata.json");
       if (!meta?.units) throw new Error("角色臉部位置資料不存在");
       metadata=meta.units;
+      initialized=true;
       await draw();
     } catch (error) {
       status("初始化失敗："+error.message,true);
       ui.run.disabled=true;
-    }
+    } finally {initializing=false;}
   }
   ui.run.addEventListener("click",draw);
   for(const sel of [ui.element,ui.star]) {
