@@ -7,6 +7,7 @@
   <meta name="description" content="LINE Rangers 傳奇段位 PvP 角色使用率統計工具">
   <link rel="stylesheet" href="./assets/style.css">
   <link rel="stylesheet" href="./assets/poster.css">
+  <link rel="stylesheet" href="./assets/damage-poster.css">
 </head>
 <body>
   <header class="site-header">
@@ -20,6 +21,7 @@
   <nav class="view-tabs" aria-label="網站分頁">
     <button type="button" id="usageTab" class="view-tab is-active" aria-controls="usageView" aria-selected="true" role="tab">使用率統計</button>
     <button type="button" id="posterTab" class="view-tab" aria-controls="posterView" aria-selected="false" role="tab">全段位前 20 名排名圖</button>
+    <button type="button" id="damageTab" class="view-tab" aria-controls="damageView" aria-selected="false" role="tab">技能傷害排名圖</button>
   </nav>
 
   <main class="page">
@@ -134,6 +136,39 @@
         <p class="hint">預覽和下載的圖片使用王漢宗綜藝體繁，網頁其他文字維持原有字體。圖片僅顯示角色、星級與使用量。</p>
       </div>
     </section>
+
+    <section id="damageView" class="view-panel" role="tabpanel" hidden>
+      <div class="panel">
+        <h2>技能傷害排名圖片下載</h2>
+        <p class="hint">依 Rangerbook 的目前角色數值，自動計算各屬性與星級輸出前六名。總攻擊力＝物理攻擊力＋魔法攻擊力；技能輸出＝總攻擊力 ×（單擊傷害% ＋ 持續傷害% × 秒數）÷ 100。若角色有兩個攻擊技能，取技能輸出較高的一個。</p>
+        <div class="damage-controls">
+          <label>屬性（光暗可排除 NFT）
+            <select id="damageElementSelect" aria-label="選擇技能傷害排行屬性">
+              <option value="lightdark-with-nft">光＋暗（包含 NFT）</option>
+              <option value="lightdark-without-nft">光＋暗（不包含 NFT）</option>
+              <option value="fire">火</option>
+              <option value="wood">木</option>
+              <option value="water">水</option>
+            </select>
+          </label>
+          <label>星級
+            <select id="damageStarSelect" aria-label="選擇技能傷害排行星級">
+              <option value="super8">超進化8星</option>
+              <option value="star9">九星</option>
+            </select>
+          </label>
+          <button type="button" id="damageGenerateBtn">生成排名圖</button>
+          <button type="button" id="damageDownloadBtn" disabled>下載 PNG（1920 × 1080）</button>
+        </div>
+        <p id="damageStatus" class="damage-status" role="status">選擇屬性與星級，準備產生排行榜。</p>
+      </div>
+      <div class="panel poster-preview-panel">
+        <h2>技能傷害排名圖預覽</h2>
+        <div class="damage-preview-scroll"><canvas id="damageCanvas" width="1920" height="1080" aria-label="技能傷害前六名圖片"></canvas></div>
+        <ol id="damageList" class="damage-rows" aria-label="技能輸出排名文字列表"></ol>
+        <p id="damageSource" class="damage-source">資料來源：Rangerbook Rangers_data.json。排名中的 NFT 角色以名稱包含 [T] 判斷；圖片使用與使用率排名圖相同的頭像臉部錨點與縮放比例。</p>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
@@ -142,5 +177,6 @@
 
   <script src="./assets/app.js"></script>
   <script src="./assets/poster.js"></script>
+  <script src="./assets/damage-poster.js"></script>
 </body>
 </html>
