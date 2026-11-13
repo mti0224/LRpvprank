@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - "assets/poster.js"
+      - "assets/damage-poster.js"
+      - "assets/damage-poster.css"
+      - "index.html"
+      - "data/skill-damage.json"
+      - "tests/damage-browser.test.cjs"
       - "assets/poster.css"
       - "tests/poster-browser.test.cjs"
       - ".github/workflows/poster-browser-check.yml"
@@ -32,6 +37,10 @@ jobs:
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
         run: node tests/poster-browser.test.cjs
+      - name: Validate damage ranking preview, canvas PNG and NFT exclusion
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/damage-browser.test.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
