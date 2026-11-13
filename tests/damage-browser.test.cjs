@@ -27,7 +27,7 @@ const assert = require("node:assert/strict");
       return {width:c.width,height:c.height,alpha:d[3]};
     });
     assert.deepEqual(before,{width:1920,height:1080,alpha:255});
-    await page.locator("#damageCanvas").screenshot({path:"artifacts/skill-damage-water-default.png"});
+    await page.locator("#damageCanvas").screenshot({path:"artifacts/skill-damage-lightdark-default.png"});
     await page.locator("#damageElementSelect").selectOption("lightdark-without-nft");
     await page.locator("#damageStarSelect").selectOption("star9");
     await page.waitForFunction(() => !document.querySelector("#damageDownloadBtn").disabled
