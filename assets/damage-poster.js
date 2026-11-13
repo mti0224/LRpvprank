@@ -284,6 +284,7 @@
   async function initialize() {
     if (initializing || initialized) return;
     initializing=true;
+    ui.run.disabled=true;
     try {
       status("正在讀取角色頭像位置與技能傷害排行榜…");
       const meta=await loadJSON("./data/ranger-metadata.json");
