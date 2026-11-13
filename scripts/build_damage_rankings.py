@@ -129,6 +129,53 @@ def build_payload(rangers, generated_at=None):
     }
 
 
+
+PORTRAIT_META = Path("data/ranger-metadata.json")
+PROJECTILES = "https://raw.githubusercontent.com/mti0224/rangerbook/main/res/v2/projectiles.json"
+
+
+def fill_missing_portrait_geometry(rangers, payload):
+    """Only fetch the large projectiles index when a ranked Ranger has no native crop."""
+    if not PORTRAIT_META.exists():
+        raise FileNotFoundError("Missing native portrait metadata: data/ranger-metadata.json")
+    meta = json.loads(PORTRAIT_META.read_text(encoding="utf-8"))
+    units = meta.get("units", {})
+    top_ids = {
+        entry["id"]
+        for groups in payload["rankings"].values()
+        for ranking in groups.values()
+        for entry in ranking
+    }
+    missing = top_ids.difference(units)
+    if not missing:
+        return
+    print("Fetching native portrait geometry for", len(missing), "new ranked Rangers")
+    response = requests.get(PROJECTILES, timeout=90, headers={
+        "User-Agent": "LRpvprank-skill-damage/1.0"
+    })
+    response.raise_for_status()
+    projectiles = response.json().get("units", {})
+    by_id = {str(row.get("ranger_id")): row for row in rangers if isinstance(row, dict)}
+    for id in sorted(missing):
+        visual = projectiles.get(id, {}).get("visual", {})
+        face = visual.get("faceCenter")
+        scale = visual.get("scale")
+        if (not isinstance(face, dict)
+                or not isinstance(face.get("x"), (int, float))
+                or not isinstance(face.get("y"), (int, float))
+                or not isinstance(scale, (int, float)) or scale <= 0):
+            raise ValueError("Missing actual native portrait geometry for " + id)
+        row = by_id[id]
+        units[id] = {
+            "name": row.get("Ranger名稱"),
+            "star": row.get("Ranger星數"),
+            "faceCenter": face,
+            "sizeRatio": scale,
+        }
+    meta["units"] = units
+    PORTRAIT_META.write_text(json.dumps(meta, ensure_ascii=False, separators=(",", ":")) + "\n",
+                             encoding="utf-8")
+
 def main():
     response = requests.get(SOURCE, timeout=90, headers={
         "User-Agent": "LRpvprank-skill-damage/1.0"
@@ -138,6 +185,7 @@ def main():
     if not isinstance(rows, list) or len(rows) < 50:
         raise ValueError("Rangerbook Rangers_data.json is not a valid ranger list")
     payload = build_payload(rows)
+    fill_missing_portrait_geometry(rows, payload)
     if any(not payload["rankings"][element][star] for element in ELEMENTS for star in STARS):
         raise ValueError("One or more damage poster groups have no calculable data")
     if OUTPUT.exists():
