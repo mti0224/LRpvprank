@@ -186,7 +186,7 @@ def main():
         raise ValueError("Rangerbook Rangers_data.json is not a valid ranger list")
     payload = build_payload(rows)
     fill_missing_portrait_geometry(rows, payload)
-    if any(not payload["rankings"][element][star] for element in ELEMENTS for star in STARS):
+    if any(len(payload["rankings"][element][star]) != 6 for element in ELEMENTS for star in STARS):
         raise ValueError("One or more damage poster groups have no calculable data")
     if OUTPUT.exists():
         try:
