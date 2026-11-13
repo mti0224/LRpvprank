@@ -1,0 +1,18 @@
+/* Isolated skill damage ranking download view; existing usage poster is unchanged. */
+#damageView{min-width:0}
+.damage-controls{display:flex;flex-wrap:wrap;gap:14px;align-items:end}
+.damage-controls label{min-width:225px;flex:1 1 260px}
+.damage-controls select{width:100%}
+.damage-controls button{min-height:48px}
+.damage-status{margin:14px 0 0;color:#b3d1ff;line-height:1.6}
+.damage-status.is-error{color:#ffb5b5}
+.damage-preview-scroll{width:100%;max-width:100%;overflow-x:auto;background:#0d1421;border-radius:13px}
+#damageCanvas{display:block;width:100%;min-width:600px;aspect-ratio:16 / 9;height:auto;background:#1a2637}
+.damage-rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 32px;padding-left:25px;margin:18px 0 8px}
+.damage-rows li{overflow-wrap:anywhere;line-height:1.7}
+.damage-source{font-size:.92rem;color:#b7c3d8;line-height:1.6}
+@media(max-width:820px){
+  .damage-controls{align-items:stretch}
+  .damage-controls label,.damage-controls button{min-width:0;width:100%;flex-basis:100%}
+  .damage-rows{grid-template-columns:1fr}
+}
