@@ -1,0 +1,899 @@
+{
+  "schemaVersion": 1,
+  "source": "https://raw.githubusercontent.com/mti0224/rangerbook/main/res/Rangers_data.json",
+  "generatedAtUtc": "2026-11-13T12:05:45Z",
+  "candidateCounts": {
+    "lightdark-with-nft": {
+      "super8": 46,
+      "star9": 34
+    },
+    "lightdark-without-nft": {
+      "super8": 37,
+      "star9": 25
+    },
+    "fire": {
+      "super8": 135,
+      "star9": 55
+    },
+    "wood": {
+      "super8": 130,
+      "star9": 45
+    },
+    "water": {
+      "super8": 121,
+      "star9": 43
+    }
+  },
+  "rankings": {
+    "lightdark-with-nft": {
+      "super8": [
+        {
+          "id": "u1615h-brown",
+          "name": "裝甲鍬形蟲熊大",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "暗",
+          "attack": 90450,
+          "skillName": "undefined（效果尚未翻譯）",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 1500,
+              "seconds": 8
+            }
+          ],
+          "damage": 10854000
+        },
+        {
+          "id": "u1517h-ron",
+          "name": "海灘救生員榮恩",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "光",
+          "attack": 93780,
+          "skillName": "灌入空氣",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 1000,
+              "seconds": 10
+            }
+          ],
+          "damage": 9378000
+        },
+        {
+          "id": "u1630h-sally",
+          "name": "暗黑巨蟹座莎莉",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "光",
+          "attack": 117780,
+          "skillName": "從地底突襲",
+          "directPercent": 4000,
+          "dots": [],
+          "damage": 4711200
+        },
+        {
+          "id": "u3015h-edward",
+          "name": "戰艦R10愛德華[T]",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "光",
+          "attack": 99780,
+          "skillName": "猛毒",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 400,
+              "seconds": 10
+            }
+          ],
+          "damage": 3991200
+        },
+        {
+          "id": "u1418h-moon",
+          "name": "職業自行車選手饅頭人",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "光",
+          "attack": 67330,
+          "skillName": "高速突破",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 800,
+              "seconds": 6
+            }
+          ],
+          "damage": 3231840
+        },
+        {
+          "id": "u1583h-moon",
+          "name": "不屈戰士饅頭人",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "光",
+          "attack": 73110,
+          "skillName": "旋風一閃",
+          "directPercent": 4000,
+          "dots": [],
+          "damage": 2924400
+        }
+      ],
+      "star9": [
+        {
+          "id": "u1616e-brown",
+          "name": "黃金鍬形蟲熊大",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "暗",
+          "attack": 153450,
+          "skillName": "undefined（效果尚未翻譯）",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 1500,
+              "seconds": 8
+            }
+          ],
+          "damage": 18414000
+        },
+        {
+          "id": "u1518e-ron",
+          "name": "海域救生員榮恩",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "光",
+          "attack": 177550,
+          "skillName": "灌入空氣",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 1000,
+              "seconds": 10
+            }
+          ],
+          "damage": 17755000
+        },
+        {
+          "id": "u1631e-sally",
+          "name": "太陽巨蟹座莎莉",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "光",
+          "attack": 222660,
+          "skillName": "從地底突襲",
+          "directPercent": 4000,
+          "dots": [],
+          "damage": 8906400
+        },
+        {
+          "id": "u3016e-edward",
+          "name": "戰艦R100愛德華[T]",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "光",
+          "attack": 188670,
+          "skillName": "猛毒",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 400,
+              "seconds": 10
+            }
+          ],
+          "damage": 7546800
+        },
+        {
+          "id": "u1419e-moon",
+          "name": "明星自行車選手饅頭人",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "光",
+          "attack": 114450,
+          "skillName": "高速突破",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 800,
+              "seconds": 6
+            }
+          ],
+          "damage": 5493600
+        },
+        {
+          "id": "u1434e-boss",
+          "name": "黃金狂徒部長",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "暗",
+          "attack": 161330,
+          "skillName": "神速槍擊",
+          "directPercent": 3300,
+          "dots": [],
+          "damage": 5323890
+        }
+      ]
+    },
+    "lightdark-without-nft": {
+      "super8": [
+        {
+          "id": "u1615h-brown",
+          "name": "裝甲鍬形蟲熊大",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "暗",
+          "attack": 90450,
+          "skillName": "undefined（效果尚未翻譯）",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 1500,
+              "seconds": 8
+            }
+          ],
+          "damage": 10854000
+        },
+        {
+          "id": "u1517h-ron",
+          "name": "海灘救生員榮恩",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "光",
+          "attack": 93780,
+          "skillName": "灌入空氣",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 1000,
+              "seconds": 10
+            }
+          ],
+          "damage": 9378000
+        },
+        {
+          "id": "u1630h-sally",
+          "name": "暗黑巨蟹座莎莉",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "光",
+          "attack": 117780,
+          "skillName": "從地底突襲",
+          "directPercent": 4000,
+          "dots": [],
+          "damage": 4711200
+        },
+        {
+          "id": "u1418h-moon",
+          "name": "職業自行車選手饅頭人",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "光",
+          "attack": 67330,
+          "skillName": "高速突破",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 800,
+              "seconds": 6
+            }
+          ],
+          "damage": 3231840
+        },
+        {
+          "id": "u1583h-moon",
+          "name": "不屈戰士饅頭人",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "光",
+          "attack": 73110,
+          "skillName": "旋風一閃",
+          "directPercent": 4000,
+          "dots": [],
+          "damage": 2924400
+        },
+        {
+          "id": "u1433h-boss",
+          "name": "荒野狂徒部長",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "暗",
+          "attack": 85330,
+          "skillName": "神速槍擊",
+          "directPercent": 3300,
+          "dots": [],
+          "damage": 2815890
+        }
+      ],
+      "star9": [
+        {
+          "id": "u1616e-brown",
+          "name": "黃金鍬形蟲熊大",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "暗",
+          "attack": 153450,
+          "skillName": "undefined（效果尚未翻譯）",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 1500,
+              "seconds": 8
+            }
+          ],
+          "damage": 18414000
+        },
+        {
+          "id": "u1518e-ron",
+          "name": "海域救生員榮恩",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "光",
+          "attack": 177550,
+          "skillName": "灌入空氣",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 1000,
+              "seconds": 10
+            }
+          ],
+          "damage": 17755000
+        },
+        {
+          "id": "u1631e-sally",
+          "name": "太陽巨蟹座莎莉",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "光",
+          "attack": 222660,
+          "skillName": "從地底突襲",
+          "directPercent": 4000,
+          "dots": [],
+          "damage": 8906400
+        },
+        {
+          "id": "u1419e-moon",
+          "name": "明星自行車選手饅頭人",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "光",
+          "attack": 114450,
+          "skillName": "高速突破",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 800,
+              "seconds": 6
+            }
+          ],
+          "damage": 5493600
+        },
+        {
+          "id": "u1434e-boss",
+          "name": "黃金狂徒部長",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "暗",
+          "attack": 161330,
+          "skillName": "神速槍擊",
+          "directPercent": 3300,
+          "dots": [],
+          "damage": 5323890
+        },
+        {
+          "id": "u1584e-moon",
+          "name": "不敗戰士饅頭人",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "光",
+          "attack": 131190,
+          "skillName": "旋風一閃",
+          "directPercent": 4000,
+          "dots": [],
+          "damage": 5247600
+        }
+      ]
+    },
+    "fire": {
+      "super8": [
+        {
+          "id": "u1570h-qs",
+          "name": "人類之王 始皇帝",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "火",
+          "attack": 106000,
+          "skillName": "蚩尤矛式・泰山龍爪",
+          "directPercent": 4400,
+          "dots": [],
+          "damage": 4664000
+        },
+        {
+          "id": "u1504h-so",
+          "name": "遊戲玩家 夜櫻四怨",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "火",
+          "attack": 99880,
+          "skillName": "嫌五協力",
+          "directPercent": 4600,
+          "dots": [],
+          "damage": 4594480
+        },
+        {
+          "id": "u1356h-mg",
+          "name": "爆裂魔法的操縱者 惠惠",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "火",
+          "attack": 94890,
+          "skillName": "爆裂魔法",
+          "directPercent": 4500,
+          "dots": [],
+          "damage": 4270050
+        },
+        {
+          "id": "u1523h-ak",
+          "name": "惡魔獵人 早川秋",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "火",
+          "attack": 101340,
+          "skillName": "叩",
+          "directPercent": 4000,
+          "dots": [],
+          "damage": 4053600
+        },
+        {
+          "id": "u1596h-moon",
+          "name": "熟練發令員饅頭人",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "火",
+          "attack": 95670,
+          "skillName": "衝突警報",
+          "directPercent": 4000,
+          "dots": [],
+          "damage": 3826800
+        },
+        {
+          "id": "u1473h-ch",
+          "name": "可靠的開鎖師 奇爾查克",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "火",
+          "attack": 44900,
+          "skillName": "發動陷阱！",
+          "directPercent": 3600,
+          "dots": [
+            {
+              "percent": 700,
+              "seconds": 7
+            }
+          ],
+          "damage": 3816500
+        }
+      ],
+      "star9": [
+        {
+          "id": "u1571e-qs",
+          "name": "統治諸王之王 始皇帝",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "火",
+          "attack": 201110,
+          "skillName": "蚩尤矛式・泰山龍爪",
+          "directPercent": 4400,
+          "dots": [],
+          "damage": 8848840
+        },
+        {
+          "id": "u1505e-so",
+          "name": "夜櫻家的次女 夜櫻四怨",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "火",
+          "attack": 189330,
+          "skillName": "嫌五協力",
+          "directPercent": 4600,
+          "dots": [],
+          "damage": 8709180
+        },
+        {
+          "id": "u1357e-mg",
+          "name": "無厘頭的紅魔族少女 惠惠",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "火",
+          "attack": 179770,
+          "skillName": "爆裂魔法",
+          "directPercent": 4500,
+          "dots": [],
+          "damage": 8089650
+        },
+        {
+          "id": "u1524e-ak",
+          "name": "契約惡魔是狐狸 早川秋",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "火",
+          "attack": 191440,
+          "skillName": "叩",
+          "directPercent": 4000,
+          "dots": [],
+          "damage": 7657600
+        },
+        {
+          "id": "u1597e-moon",
+          "name": "資深發令員饅頭人",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "火",
+          "attack": 181110,
+          "skillName": "衝突警報",
+          "directPercent": 4000,
+          "dots": [],
+          "damage": 7244400
+        },
+        {
+          "id": "u1500e-sally",
+          "name": "香草聖代莎莉",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "火",
+          "attack": 176110,
+          "skillName": "甜點跳躍！",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 400,
+              "seconds": 10
+            }
+          ],
+          "damage": 7044400
+        }
+      ]
+    },
+    "wood": {
+      "super8": [
+        {
+          "id": "u1572h-hd",
+          "name": "眾神最為信賴之神 黑帝斯",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "木",
+          "attack": 59930,
+          "skillName": "血之引導曙光",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 1000,
+              "seconds": 10
+            }
+          ],
+          "damage": 5993000
+        },
+        {
+          "id": "u1634h-su",
+          "name": "不列顛尼亞的騎士 樞木朱雀",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "木",
+          "attack": 117770,
+          "skillName": "強子砲",
+          "directPercent": 4700,
+          "dots": [],
+          "damage": 5535190
+        },
+        {
+          "id": "u1647h-sally",
+          "name": "1億歡慶莎莉",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "木",
+          "attack": 71550,
+          "skillName": "歡慶飛彈",
+          "directPercent": 3000,
+          "dots": [
+            {
+              "percent": 800,
+              "seconds": 5
+            }
+          ],
+          "damage": 5008500
+        },
+        {
+          "id": "u1538h-en",
+          "name": "挖角路德 恩琴",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "木",
+          "attack": 103000,
+          "skillName": "大卸八塊",
+          "directPercent": 4400,
+          "dots": [],
+          "damage": 4532000
+        },
+        {
+          "id": "u1608h-kr",
+          "name": "爆音耳機 梶 蓮",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "木",
+          "attack": 104450,
+          "skillName": "激情的連擊",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 400,
+              "seconds": 10
+            }
+          ],
+          "damage": 4178000
+        },
+        {
+          "id": "u1579h-sally",
+          "name": "紅色太極莎莉",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "木",
+          "attack": 89780,
+          "skillName": "拳頭突擊",
+          "directPercent": 4200,
+          "dots": [],
+          "damage": 3770760
+        }
+      ],
+      "star9": [
+        {
+          "id": "u1573e-hd",
+          "name": "統治冥府的絕對王者 黑帝斯",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "木",
+          "attack": 107920,
+          "skillName": "血之引導曙光",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 1000,
+              "seconds": 10
+            }
+          ],
+          "damage": 10792000
+        },
+        {
+          "id": "u1635e-su",
+          "name": "圓桌騎士 樞木朱雀",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "木",
+          "attack": 222660,
+          "skillName": "強子砲",
+          "directPercent": 4700,
+          "dots": [],
+          "damage": 10465020
+        },
+        {
+          "id": "u1539e-en",
+          "name": "人器是UMBREAKER 恩琴",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "木",
+          "attack": 195670,
+          "skillName": "大卸八塊",
+          "directPercent": 4400,
+          "dots": [],
+          "damage": 8609480
+        },
+        {
+          "id": "u1648e-sally",
+          "name": "1億感恩莎莉",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "木",
+          "attack": 121890,
+          "skillName": "歡慶飛彈",
+          "directPercent": 3000,
+          "dots": [
+            {
+              "percent": 800,
+              "seconds": 5
+            }
+          ],
+          "damage": 8532300
+        },
+        {
+          "id": "u1609e-kr",
+          "name": "寡言的領導者 梶 蓮",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "木",
+          "attack": 197000,
+          "skillName": "激情的連擊",
+          "directPercent": 0,
+          "dots": [
+            {
+              "percent": 400,
+              "seconds": 10
+            }
+          ],
+          "damage": 7880000
+        },
+        {
+          "id": "u1580e-sally",
+          "name": "太極之風莎莉",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "木",
+          "attack": 169340,
+          "skillName": "拳頭突擊",
+          "directPercent": 4200,
+          "dots": [],
+          "damage": 7112280
+        }
+      ]
+    },
+    "water": {
+      "super8": [
+        {
+          "id": "u1437h-iz",
+          "name": "第一次的心情 出雲天花",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "水",
+          "attack": 79770,
+          "skillName": "天御鳥命（Ame-no-Mitori）",
+          "directPercent": 3000,
+          "dots": [
+            {
+              "percent": 600,
+              "seconds": 6
+            }
+          ],
+          "damage": 5264820
+        },
+        {
+          "id": "u1587h-es",
+          "name": "一階乙組 緣城蒼吏",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "水",
+          "attack": 102220,
+          "skillName": "鬼火炎技・炎天下",
+          "directPercent": 4500,
+          "dots": [],
+          "damage": 4599900
+        },
+        {
+          "id": "u1452h-ka",
+          "name": "大胃王少女 神樂",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "水",
+          "attack": 107230,
+          "skillName": "定春走囉阿魯！",
+          "directPercent": 4200,
+          "dots": [],
+          "damage": 4503660
+        },
+        {
+          "id": "u1636h-cc",
+          "name": "CODE持有者 C‧C‧",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "水",
+          "attack": 112110,
+          "skillName": "內藏式機槍",
+          "directPercent": 4000,
+          "dots": [],
+          "damage": 4484400
+        },
+        {
+          "id": "u1566h-sally",
+          "name": "桃紅蠟燭莎莉",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "水",
+          "attack": 102780,
+          "skillName": "蠟燭火箭筒",
+          "directPercent": 3500,
+          "dots": [],
+          "damage": 3597300
+        },
+        {
+          "id": "u1490h-dr",
+          "name": "賽諾科學王國 Dr.賽諾",
+          "star": "超進化8星",
+          "starKey": "super8",
+          "element": "水",
+          "attack": 91990,
+          "skillName": "獨霸世界的力量",
+          "directPercent": 3800,
+          "dots": [],
+          "damage": 3495620
+        }
+      ],
+      "star9": [
+        {
+          "id": "u1438e-iz",
+          "name": "666次的瞬間移動者 出雲天花",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "水",
+          "attack": 151110,
+          "skillName": "天御鳥命（Ame-no-Mitori）",
+          "directPercent": 3000,
+          "dots": [
+            {
+              "percent": 600,
+              "seconds": 6
+            }
+          ],
+          "damage": 9973260
+        },
+        {
+          "id": "u1588e-es",
+          "name": "炎上系 緣城蒼吏",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "水",
+          "attack": 194000,
+          "skillName": "鬼火炎技・炎天下",
+          "directPercent": 4500,
+          "dots": [],
+          "damage": 8730000
+        },
+        {
+          "id": "u1637e-cc",
+          "name": "ZERO的共犯 C‧C‧",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "水",
+          "attack": 212220,
+          "skillName": "內藏式機槍",
+          "directPercent": 4000,
+          "dots": [],
+          "damage": 8488800
+        },
+        {
+          "id": "u1453e-ka",
+          "name": "歌舞伎町女王 神樂",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "水",
+          "attack": 192770,
+          "skillName": "定春走囉阿魯！",
+          "directPercent": 4200,
+          "dots": [],
+          "damage": 8096340
+        },
+        {
+          "id": "u1567e-sally",
+          "name": "黃金蠟燭莎莉",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "水",
+          "attack": 194890,
+          "skillName": "蠟燭火箭筒",
+          "directPercent": 3500,
+          "dots": [],
+          "damage": 6821150
+        },
+        {
+          "id": "u1491e-dr",
+          "name": "新世界 Dr.賽諾",
+          "star": "9星",
+          "starKey": "star9",
+          "element": "水",
+          "attack": 173780,
+          "skillName": "獨霸世界的力量",
+          "directPercent": 3800,
+          "dots": [],
+          "damage": 6603640
+        }
+      ]
+    }
+  }
+}
