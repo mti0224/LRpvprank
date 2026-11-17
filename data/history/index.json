@@ -2,6 +2,13 @@
   "schemaVersion": 1,
   "dates": [
     {
+      "date": "2026-11-18",
+      "file": "2026-11-18.json",
+      "generatedAtTaipei": "2026-11-18 03:27:58",
+      "loadedPlayers": 200,
+      "league": "LEGEND"
+    },
+    {
       "date": "2026-11-17",
       "file": "2026-11-17.json",
       "generatedAtTaipei": "2026-11-17 18:28:09",
